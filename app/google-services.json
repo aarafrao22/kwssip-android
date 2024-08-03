@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "590994638285",
+    "project_id": "kwssip-b203c",
+    "storage_bucket": "kwssip-b203c.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:590994638285:android:54aa16e344c76031483084",
+        "android_client_info": {
+          "package_name": "com.aaraf.kwssip_android"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDp8RgW76JZadMDOL4ANjFhCzmSG5hA6-I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
