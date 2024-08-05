@@ -41,7 +41,7 @@ fun LoginScreen() {
                 .wrapContentHeight()
         ) {
             Image(
-                painter = painterResource(id = R.drawable.white),
+                painter = painterResource(id = R.drawable.blue_logo),
                 contentDescription = "Splash Background",
                 modifier = Modifier
                     .height(120.dp) // Adjust the height as needed
