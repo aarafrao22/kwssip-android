@@ -1,5 +1,7 @@
 package com.aaraf.kwssip_android.views
 
+import android.app.Activity
+import android.content.Intent
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -25,10 +27,12 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -38,15 +42,19 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aaraf.kwssip_android.HomeActivity
 import com.aaraf.kwssip_android.R
-import java.util.regex.Pattern
+import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Preview(showBackground = true)
 @Composable
 fun LoginScreen() {
-    val email = remember { mutableStateOf("") }
-    val password = remember { mutableStateOf("") }
+    val email = rememberSaveable { mutableStateOf("") }
+    val password = rememberSaveable { mutableStateOf("") }
+    val emailError = rememberSaveable { mutableStateOf<String?>(null) }
+    val passwordError = rememberSaveable { mutableStateOf<String?>(null) }
+    val context = LocalContext.current // Get the current context
+    val coroutineScope = rememberCoroutineScope() // For starting the activity
 
     Box(
         modifier = Modifier
@@ -88,51 +96,19 @@ fun LoginScreen() {
             )
             Spacer(modifier = Modifier.height(40.dp))
 
-
-
-            TextField(
+            CustomTextField(
                 value = email.value,
-                colors = TextFieldDefaults.textFieldColors(
-                    disabledTextColor = Color.Transparent,
-                    containerColor = Color.White,
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent,
-                    disabledIndicatorColor = Color.Transparent
-                ),
-                textStyle = TextStyle(
-                    color = Color.DarkGray,
-                ),
-                shape = RoundedCornerShape(32.dp),
                 onValueChange = { email.value = it },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                placeholder = {
-                    Text(text = "Enter Email", color = Color.Gray)
-                },
+                placeholder = "Enter Email",
+                errorMessage = emailError.value
             )
 
-            TextField(
+            CustomTextField(
                 value = password.value,
-                colors = TextFieldDefaults.textFieldColors(
-                    disabledTextColor = Color.Transparent,
-                    containerColor = Color.White,
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent,
-                    disabledIndicatorColor = Color.Transparent
-                ),
-                textStyle = TextStyle(
-                    color = Color.DarkGray,
-                ),
-                shape = RoundedCornerShape(32.dp),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 onValueChange = { password.value = it },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                placeholder = {
-                    Text(text = "Enter Password", color = Color.Gray)
-                },
+                placeholder = "Enter Password",
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                errorMessage = passwordError.value
             )
 
             Spacer(modifier = Modifier.height(26.dp))
@@ -144,14 +120,17 @@ fun LoginScreen() {
                     contentColor = Color.White
                 ),
                 onClick = {
-                    validateInputs(email, password)
+                    if (validateInputs(email.value, password.value, emailError, passwordError))
+                        coroutineScope.launch {
+                            context.startActivity(Intent(context, HomeActivity::class.java))
+                            (context as? Activity)?.finish() // Finish the LoginActivity
+                        }
                 },
                 modifier = Modifier
                     .align(Alignment.CenterHorizontally)
                     .height(height = 50.dp)
                     .fillMaxWidth(),
-
-                ) {
+            ) {
                 Text(text = "Login")
             }
 
@@ -160,55 +139,79 @@ fun LoginScreen() {
     }
 }
 
-fun validateInputs(email: MutableState<String>, password: MutableState<String>) {
-    val emailPattern = Pattern.compile("[a-zA-Z0-9._-]+@[a-z]+\\.+[a-z]+")
-    val error = null // Adjust error object according to your actual implementation
-
-    if (email.value.trim().isNotEmpty() || password.value.trim().isNotEmpty()) {
-        if (isEmailValid(email.value, emailPattern)) {
-            // Valid email, proceed with contact validation
-            if (password.value.length >= 11) {
-                if (isEmailValid(email.value, emailPattern)) {
-                    // "before login event"
-                    loginEvent()
-                    Log.d("TAG", "validated Inputs xD xD ")
-                    disable()
-                } else {
-                    showInvalidEmailError()
-                }
-            } else {
-                showInvalidContactError()
-            }
-        } else {
-            showInvalidEmailError()
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CustomTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    errorMessage: String?,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default
+) {
+    Column {
+        TextField(
+            value = value,
+            colors = TextFieldDefaults.textFieldColors(
+                disabledTextColor = Color.Transparent,
+                containerColor = Color.White,
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+                disabledIndicatorColor = Color.Transparent
+            ),
+            textStyle = TextStyle(
+                color = Color.DarkGray,
+            ),
+            shape = RoundedCornerShape(32.dp),
+            keyboardOptions = keyboardOptions,
+            onValueChange = onValueChange,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            placeholder = {
+                Text(text = placeholder, color = Color.Gray)
+            },
+            isError = errorMessage != null
+        )
+        if (errorMessage != null) {
+            Text(
+                text = errorMessage,
+                color = Color.Red,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(start = 16.dp)
+            )
         }
-    } else {
-//        Toast.makeText(ctx, "Enter Credentials First", Toast.LENGTH_SHORT).show()
-        Log.d("TAG", "Enter Credentials First")
-        disable()
     }
 }
 
-fun isEmailValid(email: String, pattern: Pattern): Boolean {
-    val result = email.trim().matches(pattern.toRegex())
-    Log.d("TAG", "isEmailValid: $result")
-    return result
-}
+fun validateInputs(
+    email: String,
+    password: String,
+    emailError: MutableState<String?>,
+    passwordError: MutableState<String?>
+): Boolean {
+    val emailPattern = "[a-zA-Z0-9._-]+@[a-z]+\\.+[a-z]+".toRegex()
+    emailError.value = null
+    passwordError.value = null
 
-fun showInvalidEmailError() {
-//    edEmail.setError("Invalid Email Address", error)
-    disable()
-}
+    when {
+        email.trim().isEmpty() || password.trim().isEmpty() -> {
+            if (email.trim().isEmpty()) emailError.value = "Enter Email"
+            if (password.trim().isEmpty()) passwordError.value = "Enter Password"
+            Log.d("TAG", "Enter Credentials First")
+            return false
+        }
 
-fun showInvalidContactError() {
-//    edContact.setError("Invalid Contact: 11 digits Required", error)
-    disable()
-}
+        !email.matches(emailPattern) -> {
+            emailError.value = "Invalid Email Address"
+            Log.d("TAG", "Invalid Email Address")
+            return false
 
-fun disable() {
-    // Implement disable logic here
-}
+        }
 
-fun loginEvent() {
-    // Implement login event logic here
+        else -> {
+            Log.d("TAG", "validated Inputs xD xD")
+            return true
+
+        }
+    }
 }
