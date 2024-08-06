@@ -1,8 +1,11 @@
 package com.aaraf.kwssip_android.views
 
 import android.app.Activity
+import android.content.ContentValues.TAG
+import android.content.Context
 import android.content.Intent
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -44,7 +47,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aaraf.kwssip_android.HomeActivity
 import com.aaraf.kwssip_android.R
+import com.aaraf.kwssip_android.model.LoginResponse
+import com.aaraf.kwssip_android.network.RetrofitInterface
+import com.aaraf.kwssip_android.network.ServiceBuilder
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 @Preview(showBackground = true)
 @Composable
@@ -120,11 +132,15 @@ fun LoginScreen() {
                     contentColor = Color.White
                 ),
                 onClick = {
-                    if (validateInputs(email.value, password.value, emailError, passwordError))
-                        coroutineScope.launch {
-                            context.startActivity(Intent(context, HomeActivity::class.java))
-                            (context as? Activity)?.finish() // Finish the LoginActivity
-                        }
+                    if (validateInputs(
+                            email.value,
+                            password.value,
+                            emailError,
+                            passwordError
+                        )
+                    ) coroutineScope.launch {
+                        callApi(email.value, password.value, context)
+                    }
                 },
                 modifier = Modifier
                     .align(Alignment.CenterHorizontally)
@@ -213,5 +229,32 @@ fun validateInputs(
             return true
 
         }
+    }
+}
+
+suspend fun callApi(email: String, password: String, context: Context): Boolean {
+    return suspendCancellableCoroutine { continuation ->
+        ServiceBuilder.buildService(RetrofitInterface::class.java)
+            .login(email, password, "1", "dmfklerfrjkhrjkth")
+            .enqueue(object : Callback<LoginResponse> {
+                override fun onResponse(
+                    call: Call<LoginResponse>, response: Response<LoginResponse>
+                ) {
+                    if (response.isSuccessful && response.body()?.Success == true) {
+                        Log.d(TAG, "onResponse: ${response.body()?.message}")
+                        context.startActivity(Intent(context, HomeActivity::class.java))
+                        (context as? Activity)?.finish() // Finish the LoginActivity
+                        continuation.resume(true)
+                    } else {
+                        continuation.resume(false)
+                        Toast.makeText(context, response.body()?.message, Toast.LENGTH_SHORT).show()
+                    }
+                }
+
+                override fun onFailure(call: Call<LoginResponse>, t: Throwable) {
+                    Log.d(TAG, "onFailure: ${t.message}")
+                    continuation.resumeWithException(t)
+                }
+            })
     }
 }
