@@ -9,7 +9,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
 import com.aaraf.kwssip_android.ui.theme.KWSSIPAndroidTheme
-import com.aaraf.kwssip_android.views.HomeScreen
+import com.aaraf.kwssip_android.views.BottomSheetView
+
 
 class HomeActivity : ComponentActivity() {
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -19,9 +20,11 @@ class HomeActivity : ComponentActivity() {
         setContent {
             KWSSIPAndroidTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) {
-                    HomeScreen()
+//                    HomeViewIos()
+                    BottomSheetView(onDismiss = {})
                 }
             }
         }
     }
+
 }

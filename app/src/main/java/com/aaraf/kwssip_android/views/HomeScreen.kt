@@ -1,6 +1,18 @@
 package com.aaraf.kwssip_android.views
 
+import android.annotation.SuppressLint
+import android.app.Activity
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import androidx.activity.compose.ManagedActivityResultLauncher
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.ActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,9 +29,13 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -27,12 +43,27 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.rememberAsyncImagePainter
 import com.aaraf.kwssip_android.R
+import com.github.dhaval2404.imagepicker.ImagePicker
 
 
 @Composable
 @Preview(showBackground = true)
 fun HomeScreen() {
+    val context = LocalContext.current
+    val imageUri = remember { mutableStateOf<Uri?>(null) }
+
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val uri = result.data?.data
+            imageUri.value = uri
+        }
+    }
+
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -63,16 +94,16 @@ fun HomeScreen() {
                 modifier = Modifier.padding(12.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                CardItem()
-                CardItem()
+                CardItem(context, launcher, imageUri)
+                CardItem(context, launcher, imageUri)
             }
 
             Row(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                CardItem()
-                CardItem()
-                CardItem()
+                CardItem(context, launcher, imageUri)
+                CardItem(context, launcher, imageUri)
+                CardItem(context, launcher, imageUri)
             }
             Spacer(modifier = Modifier.height(height = 80.dp))
             Button(
@@ -103,9 +134,18 @@ fun HomeScreen() {
     }
 }
 
+@SuppressLint("UnrememberedMutableInteractionSource")
 @Composable
-fun CardItem() {
-    Box(
+fun CardItem(
+    context: Context,
+    launcher: ManagedActivityResultLauncher<Intent, ActivityResult>,
+    imageUri: MutableState<Uri?>
+) {
+    val activity = context as? Activity
+        ?: // Log error or handle null activity case
+        return
+
+    Image(
         modifier = Modifier
             .background(
                 color = colorResource(id = R.color.dark_grey),
@@ -113,9 +153,22 @@ fun CardItem() {
             )
             .height(80.dp)
             .width(80.dp)
-            .padding(8.dp)
+            .clickable(
+                interactionSource = MutableInteractionSource(),
+                indication = null,
+                onClick = {
+                    ImagePicker
+                        .with(activity)
+                        .galleryOnly()
+                        .crop() // Optional crop option
+                        .createIntent { intent ->
+                            launcher.launch(intent)
+                        }
+                }
+            ),
+        painter = rememberAsyncImagePainter(model = imageUri.value),
+        contentDescription = "Selected Image"
     )
-
 }
 
 @Composable
@@ -141,7 +194,7 @@ fun NumberRow() {
                     text = number,
                     textAlign = TextAlign.Center,
                     color = Color.White,
-                    fontSize = 18.sp
+                    fontSize = 20.sp
                 )
             }
             Spacer(modifier = Modifier.width(8.dp)) // Add margin between items

@@ -67,6 +67,7 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.lifecycle.livedata.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation(libs.play.services.cast.framework)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -87,5 +88,7 @@ dependencies {
 
     // OkHttp (Optional: For logging and debugging)
     implementation("com.squareup.okhttp3:logging-interceptor:4.9.0")
+    implementation("com.github.dhaval2404:imagepicker:2.1")
+    implementation("io.coil-kt:coil-compose:2.1.0")
 
 }

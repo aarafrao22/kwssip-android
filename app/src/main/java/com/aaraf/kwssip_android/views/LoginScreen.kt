@@ -139,7 +139,9 @@ fun LoginScreen() {
                             passwordError
                         )
                     ) coroutineScope.launch {
-                        callApi(email.value, password.value, context)
+//                        callApi(email.value, password.value, context)
+                        context.startActivity(Intent(context, HomeActivity::class.java))
+                        (context as? Activity)?.finish() // Finish the LoginActivity
                     }
                 },
                 modifier = Modifier
@@ -176,9 +178,11 @@ fun CustomTextField(
             ),
             textStyle = TextStyle(
                 color = Color.DarkGray,
+                fontSize = 18.sp,
             ),
             shape = RoundedCornerShape(32.dp),
             keyboardOptions = keyboardOptions,
+            singleLine = true,
             onValueChange = onValueChange,
             modifier = Modifier
                 .fillMaxWidth()
@@ -221,13 +225,11 @@ fun validateInputs(
             emailError.value = "Invalid Email Address"
             Log.d("TAG", "Invalid Email Address")
             return false
-
         }
 
         else -> {
             Log.d("TAG", "validated Inputs xD xD")
             return true
-
         }
     }
 }
@@ -241,10 +243,12 @@ suspend fun callApi(email: String, password: String, context: Context): Boolean 
                     call: Call<LoginResponse>, response: Response<LoginResponse>
                 ) {
                     if (response.isSuccessful && response.body()?.Success == true) {
+
                         Log.d(TAG, "onResponse: ${response.body()?.message}")
                         context.startActivity(Intent(context, HomeActivity::class.java))
                         (context as? Activity)?.finish() // Finish the LoginActivity
                         continuation.resume(true)
+
                     } else {
                         continuation.resume(false)
                         Toast.makeText(context, response.body()?.message, Toast.LENGTH_SHORT).show()
