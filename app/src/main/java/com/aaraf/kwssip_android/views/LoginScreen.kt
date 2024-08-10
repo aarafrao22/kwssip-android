@@ -108,14 +108,14 @@ fun LoginScreen() {
             )
             Spacer(modifier = Modifier.height(40.dp))
 
-            CustomTextField(
+            loginField(
                 value = email.value,
                 onValueChange = { email.value = it },
                 placeholder = "Enter Email",
                 errorMessage = emailError.value
             )
 
-            CustomTextField(
+            loginField(
                 value = password.value,
                 onValueChange = { password.value = it },
                 placeholder = "Enter Password",
@@ -159,7 +159,7 @@ fun LoginScreen() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CustomTextField(
+fun loginField(
     value: String,
     onValueChange: (String) -> Unit,
     placeholder: String,
