@@ -1,5 +1,7 @@
 package com.aaraf.kwssip_android.views
 
+import android.content.ContentValues.TAG
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -18,7 +20,6 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -32,15 +33,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aaraf.kwssip_android.R
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RatingBottomSheet(onDismiss: () -> Unit) {
-    val name by remember { mutableStateOf("") }
-    val placeholder by remember { mutableStateOf("") }
+    val name = rememberSaveable { mutableStateOf("") }
     val comment = rememberSaveable { mutableStateOf("") }
     val commentError = rememberSaveable { mutableStateOf<String?>(null) }
-    val nameError = rememberSaveable { mutableStateOf<String?>(null) }
     val bottomSheetState = rememberModalBottomSheetState(false)
     val showAlertDialog = remember { mutableStateOf(false) }
 
@@ -92,44 +90,34 @@ fun RatingBottomSheet(onDismiss: () -> Unit) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-
-//            TextField(
-//                placeholder = { Text(text = "placeholder")},
-//                value = name,
-//                colors = TextFieldDefaults.textFieldColors(
-//                    disabledTextColor = Color.Transparent,
-//                    containerColor = Color.White,
-//                    focusedIndicatorColor = Color.Transparent,
-//                    unfocusedIndicatorColor = Color.Transparent,
-//                    disabledIndicatorColor = Color.Transparent
-//                ),
-//                textStyle = TextStyle(
-//                    color = Color.DarkGray,
-//                    fontSize = 18.sp,
-//                ),
-//                shape = RoundedCornerShape(16.dp),
-//                onValueChange = name,
-//                modifier = Modifier
-//                    .fillMaxWidth()
-//                    .padding(16.dp),
-//            )
-            Column(modifier = Modifier.fillMaxWidth()) {
-
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(60.dp)
+                    .padding(horizontal = 16.dp)
+            ) {
+                // First CustomTextFieldBottomSheet for Name
                 CustomTextFieldBottomSheet(
-                    value = comment.value,
-                    onValueChange = { comment.value = it },
+                    value = name.value,
+                    onValueChange = { name.value = it },
                     placeholder = "Name",
                     errorMessage = commentError.value,
                     modifier = Modifier
-                        .align(Alignment.CenterHorizontally)
-                        .padding(16.dp),
+                        .align(Alignment.CenterVertically)
+                        .weight(1f)
+                        .padding(end = 8.dp)
                 )
+
+                // Second CustomTextFieldBottomSheet for Phone
                 CustomTextFieldBottomSheet(
                     value = comment.value,
                     onValueChange = { comment.value = it },
                     placeholder = "Phone",
                     errorMessage = commentError.value,
-                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                    modifier = Modifier
+                        .align(Alignment.CenterVertically)
+                        .weight(1f)
+                        .padding(start = 8.dp)
                 )
             }
 
@@ -142,7 +130,8 @@ fun RatingBottomSheet(onDismiss: () -> Unit) {
                 errorMessage = commentError.value,
                 modifier = Modifier
                     .align(Alignment.CenterHorizontally)
-                    .height(220.dp),
+                    .padding(start = 8.dp, end = 8.dp)
+                    .height(160.dp),
             )
 
             Spacer(modifier = Modifier.height(24.dp)) // Adjusted spacing
@@ -150,7 +139,7 @@ fun RatingBottomSheet(onDismiss: () -> Unit) {
             Button(
                 onClick = {
                     // Simulate image upload and show the alert dialog
-                    showAlertDialog.value = true
+                    showAlertDialog.value = uploadedImages()
                 }, colors = ButtonDefaults.buttonColors(
                     containerColor = Color.White,
                     contentColor = colorResource(id = R.color.theme_blue)
@@ -188,8 +177,9 @@ fun RatingBottomSheet(onDismiss: () -> Unit) {
     }
 }
 
-@Composable
-fun textFieldNew() {
-
+fun uploadedImages(): Boolean {
+    Log.d(TAG, "uploadImages: ")
+    return true
 }
+
 

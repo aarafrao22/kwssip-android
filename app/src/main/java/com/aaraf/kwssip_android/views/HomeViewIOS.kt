@@ -55,7 +55,7 @@ import com.github.dhaval2404.imagepicker.ImagePicker
 
 @Composable
 fun HomeView() {
-    var isSheetPresented by remember { mutableStateOf(true) }
+    var isSheetPresented by remember { mutableStateOf(false) }
     var selectedImageCount by remember { mutableIntStateOf(0) }
 
     var imageUris by remember { mutableStateOf(List(5) { null as Uri? }) }
