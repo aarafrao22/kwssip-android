@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -17,14 +18,12 @@ import androidx.compose.ui.platform.LocalContext
 import com.aaraf.kwssip_android.Utils.FCM_TOKEN
 import com.aaraf.kwssip_android.ui.theme.KWSSIPAndroidTheme
 import com.aaraf.kwssip_android.views.SplashScreen
-import com.google.android.gms.tasks.Task
 import com.google.firebase.FirebaseApp
 import com.google.firebase.messaging.FirebaseMessaging
 
 @SuppressLint("CustomSplashScreen")
 class SplashActivity : ComponentActivity() {
-    private var count = 0
-    private var updatedFCM = ""
+    private var retryCount = 0
 
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,11 +37,15 @@ class SplashActivity : ComponentActivity() {
                     val context = LocalContext.current
                     FirebaseApp.initializeApp(context)
 
+                    generateFCMToken(context)
 
-                    generate_fcm(context)
-
-                    Handler().postDelayed({
-                        startActivity(Intent(this, LoginActivity::class.java))
+                    Handler(Looper.getMainLooper()).postDelayed({
+                        val nextActivity = if (getSavedAppId(context).isEmpty()) {
+                            LoginActivity::class.java
+                        } else {
+                            HomeActivity::class.java
+                        }
+                        startActivity(Intent(this, nextActivity))
                         finish()
                     }, 4500)
                 }
@@ -52,39 +55,41 @@ class SplashActivity : ComponentActivity() {
 
     private fun saveUpdatedToken(context: Context, token: String) {
         val sharedPreferences = context.getSharedPreferences("MySharedPref", MODE_PRIVATE)
-        val myEdit = sharedPreferences.edit()
-
-        myEdit.putString("RefreshedToken", token)
-        Log.d(TAG, "saveUpdatedToken: tokenSaved $token")
-        myEdit.apply()
+        sharedPreferences.edit().apply {
+            putString("RefreshedToken", token)
+            apply()
+        }
+        Log.d(TAG, "Token saved: $token")
     }
 
-    private fun generate_fcm(context: Context) {
-        if (count <= 3) {
-            FirebaseMessaging.getInstance().token.addOnCompleteListener { task: Task<String> ->
-                if (task.isSuccessful) {
-                    val fcmToken = task.result
-                    if ("1" != fcmToken) {
-                        Log.d(TAG, "FCM Token: $updatedFCM")
-                        if (updatedFCM != "") {
-                            FCM_TOKEN = updatedFCM
-                            saveUpdatedToken(context, updatedFCM)
-                        }
-                    } else {
-                        count++
-                        generate_fcm(context) // Retry if token is "1"
-                    }
-                } else {
-                    Log.e(
-                        TAG,
-                        "Error getting FCM token: " + task.exception
-                    )
-                }
-            }
-        } else {
+    private fun getSavedAppId(context: Context): String {
+        val sharedPreferences = context.getSharedPreferences("MySharedPref", MODE_PRIVATE)
+        val appId = sharedPreferences.getString("appId", "").orEmpty()
+
+        Log.d(TAG, if (appId.isNotEmpty()) "App ID retrieved: $appId" else "No App ID found")
+        return appId
+    }
+
+    private fun generateFCMToken(context: Context) {
+        if (retryCount > 3) {
             Log.e(TAG, "Exceeded maximum retry count for generating FCM token.")
+            return
+        }
+
+        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                val fcmToken = task.result
+                if (fcmToken != "1" && fcmToken.isNotEmpty()) {
+                    Log.d(TAG, "FCM Token: $fcmToken")
+                    saveUpdatedToken(context, fcmToken)
+                    FCM_TOKEN = fcmToken
+                } else {
+                    retryCount++
+                    generateFCMToken(context)
+                }
+            } else {
+                Log.e(TAG, "Error getting FCM token: ${task.exception}")
+            }
         }
     }
 }
-
-

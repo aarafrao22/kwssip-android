@@ -8,6 +8,7 @@ import android.content.Context.MODE_PRIVATE
 import android.content.Intent
 import android.content.SharedPreferences
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -271,14 +272,26 @@ suspend fun callApi(email: String, password: String, context: Context, fcm_token
 
                         Log.d(TAG, "onResponse: ${response.body()?.message}")
                         context.startActivity(Intent(context, HomeActivity::class.java))
+                        saveLoginId(response.body()!!.app_id)
                         (context as? Activity)?.finish() // Finish the LoginActivity
                         continuation.resume(true)
 
                     } else {
                         continuation.resume(false)
-//                        Toast.makeText(context, response.body()?.message, Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, response.body()?.message, Toast.LENGTH_SHORT).show()
                         Log.d(TAG, "onResponse: ${response.body()?.message}")
                     }
+                }
+
+                private fun saveLoginId(appId: Int) {
+                    val sharedPreferences =
+                        context.getSharedPreferences("MySharedPref", MODE_PRIVATE)
+                    val myEdit = sharedPreferences.edit()
+
+                    myEdit.putString("appId", appId.toString())
+                    Log.d(TAG, "saveUpdatedToken: appId $appId")
+                    myEdit.apply()
+
                 }
 
                 override fun onFailure(call: Call<LoginResponse>, t: Throwable) {

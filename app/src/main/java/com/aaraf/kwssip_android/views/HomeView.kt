@@ -2,7 +2,13 @@ package com.aaraf.kwssip_android.views
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.ContentValues.TAG
+import android.content.Context
+import android.content.Context.MODE_PRIVATE
+import android.content.Intent
+import android.content.SharedPreferences
 import android.net.Uri
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -23,7 +29,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Face
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -53,15 +61,17 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
+import com.aaraf.kwssip_android.LoginActivity
 import com.aaraf.kwssip_android.R
 import com.github.dhaval2404.imagepicker.ImagePicker
+
 
 @Composable
 fun HomeView() {
     var isSheetPresented by remember { mutableStateOf(false) }
+    val showAlertDialog = remember { mutableStateOf(false) }
     var selectedImageCount by remember { mutableIntStateOf(0) }
-
-    var imageUris by remember { mutableStateOf(List(5) { null as Uri? }) }
+    var imageUris by remember { mutableStateOf(List(5) { null }) }
 
     val context = LocalContext.current as Activity
 
@@ -70,7 +80,10 @@ fun HomeView() {
             contract = ActivityResultContracts.StartActivityForResult()
         ) { result: ActivityResult ->
             if (result.resultCode == Activity.RESULT_OK) {
-                imageUris = imageUris.toMutableList().apply { this[index] = result.data?.data }
+                imageUris = imageUris.toMutableList().apply {
+                    this[index] =
+                        result.data?.data as Nothing?
+                }
                 selectedImageCount++
             }
         }
@@ -96,6 +109,7 @@ fun HomeView() {
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.align(Alignment.CenterHorizontally)
         )
+
 
         Spacer(modifier = Modifier.weight(1f))
 
@@ -156,13 +170,91 @@ fun HomeView() {
             Text("Upload Images")
         }
 
+
         if (isSheetPresented) {
             RatingBottomSheet(onDismiss = { isSheetPresented = false })
         }
 
         Spacer(modifier = Modifier.weight(1f))
+
+        if (showAlertDialog.value) {
+            AlertDialog(onDismissRequest = {
+                showAlertDialog.value = false
+                onDismiss()
+            },
+                title = { Text("Log Out?") },
+                text = { Text("Are you sure, do you wanna log out?") },
+                dismissButton = {
+                    Button(
+                        onClick = {
+                            showAlertDialog.value = false
+                            onDismiss()
+                        }, colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.Gray
+                        )
+                    ) {
+                        Text("Cancel")
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            //clear Shared Preference
+                            clearAppId(context)
+                            showAlertDialog.value = false
+                            context.startActivity(Intent(context, LoginActivity::class.java))
+                            context.finish()
+                        }, colors = ButtonDefaults.buttonColors(
+                            containerColor = colorResource(id = R.color.theme_blue)
+                        )
+                    ) {
+                        Text("Logout")
+                    }
+                })
+        }
+        Box(
+            modifier = Modifier
+                .size(78.dp)
+                .align(Alignment.End)
+                .padding(bottom = 32.dp, end = 32.dp)
+                .clip(CircleShape)
+                .background(colorResource(id = R.color.dark_blue))
+                .clickable(onClick = {
+
+                    showAlertDialog.value = true
+
+                })
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                contentDescription = "Placeholder",
+                tint = Color.White,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(12.dp)
+            )
+        }
     }
 }
+
+fun onDismiss() {
+
+
+}
+
+fun clearAppId(context: Context) {
+    val sharedPreferences: SharedPreferences =
+        context.getSharedPreferences("MySharedPref", MODE_PRIVATE)
+    val editor: SharedPreferences.Editor = sharedPreferences.edit()
+
+    if (sharedPreferences.contains("appId")) {
+        editor.remove("appId").apply()
+        Log.d(TAG, "clearAppId: appId has been cleared")
+    } else {
+        Log.d(TAG, "clearAppId: No appId to clear")
+    }
+}
+
 
 @SuppressLint("MissingColorAlphaChannel")
 @Composable
@@ -289,10 +381,6 @@ fun CustomTextFieldBottomSheet(
     }
 }
 
-fun uploadImages(onSuccess: () -> Unit) {
-    // Your image upload logic here
-    onSuccess()
-}
 
 @Composable
 @Preview(showBackground = true)
