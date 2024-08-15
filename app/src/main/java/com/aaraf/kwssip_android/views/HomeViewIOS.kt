@@ -25,6 +25,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -43,6 +44,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -51,6 +53,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
+import com.aaraf.kwssip_android.R
 import com.github.dhaval2404.imagepicker.ImagePicker
 
 @Composable
@@ -140,6 +143,10 @@ fun HomeView() {
         Spacer(modifier = Modifier.weight(1f))
 
         Button(
+            colors = ButtonDefaults.buttonColors(
+                contentColor = Color.White,
+                containerColor = colorResource(id = R.color.dark_blue)
+            ),
             onClick = { isSheetPresented = true },
             modifier = Modifier
                 .align(Alignment.CenterHorizontally)

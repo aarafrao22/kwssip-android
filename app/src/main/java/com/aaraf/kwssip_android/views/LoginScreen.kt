@@ -1,11 +1,13 @@
 package com.aaraf.kwssip_android.views
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.ContentValues.TAG
 import android.content.Context
+import android.content.Context.MODE_PRIVATE
 import android.content.Intent
+import android.content.SharedPreferences
 import android.util.Log
-import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -47,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aaraf.kwssip_android.HomeActivity
 import com.aaraf.kwssip_android.R
+import com.aaraf.kwssip_android.Utils.FCM_TOKEN
 import com.aaraf.kwssip_android.model.LoginResponse
 import com.aaraf.kwssip_android.network.RetrofitInterface
 import com.aaraf.kwssip_android.network.ServiceBuilder
@@ -58,12 +61,13 @@ import retrofit2.Response
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
+
 @Preview(showBackground = true)
 @Composable
 fun LoginScreen() {
-    val email = rememberSaveable { mutableStateOf("") }
+    val username = rememberSaveable { mutableStateOf("") }
     val password = rememberSaveable { mutableStateOf("") }
-    val emailError = rememberSaveable { mutableStateOf<String?>(null) }
+    val userNameError = rememberSaveable { mutableStateOf<String?>(null) }
     val passwordError = rememberSaveable { mutableStateOf<String?>(null) }
     val context = LocalContext.current // Get the current context
     val coroutineScope = rememberCoroutineScope() // For starting the activity
@@ -109,10 +113,10 @@ fun LoginScreen() {
             Spacer(modifier = Modifier.height(40.dp))
 
             loginField(
-                value = email.value,
-                onValueChange = { email.value = it },
+                value = username.value,
+                onValueChange = { username.value = it },
                 placeholder = "Enter Email",
-                errorMessage = emailError.value
+                errorMessage = userNameError.value
             )
 
             loginField(
@@ -133,15 +137,19 @@ fun LoginScreen() {
                 ),
                 onClick = {
                     if (validateInputs(
-                            email.value,
-                            password.value,
-                            emailError,
-                            passwordError
+                            username.value, password.value, userNameError, passwordError
                         )
                     ) coroutineScope.launch {
-//                        callApi(email.value, password.value, context)
-                        context.startActivity(Intent(context, HomeActivity::class.java))
-                        (context as? Activity)?.finish() // Finish the LoginActivity
+
+                        var fcm_token = getSavedToken(context)
+                        if (fcm_token.equals(""))
+                            fcm_token = FCM_TOKEN
+
+                        callApi(username.value, password.value, context, fcm_token!!)
+
+
+//                        context.startActivity(Intent(context, HomeActivity::class.java))
+//                        (context as? Activity)?.finish() // Finish the LoginActivity
                     }
                 },
                 modifier = Modifier
@@ -157,6 +165,22 @@ fun LoginScreen() {
     }
 }
 
+private fun getSavedToken(context: Context): String? {
+    val sharedPreferences: SharedPreferences =
+        context.getSharedPreferences("MySharedPref", MODE_PRIVATE)
+    val token: String = sharedPreferences.getString("RefreshedToken", "").toString()
+
+    if (token != "") {
+        Log.d(TAG, "getSavedToken: Token retrieved: $token")
+    } else {
+        Log.d(TAG, "getSavedToken: No token found")
+    }
+
+    return token
+}
+
+
+@SuppressLint("ComposableNaming")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun loginField(
@@ -204,28 +228,28 @@ fun loginField(
 }
 
 fun validateInputs(
-    email: String,
+    username: String,
     password: String,
-    emailError: MutableState<String?>,
+    userNameError: MutableState<String?>,
     passwordError: MutableState<String?>
 ): Boolean {
-    val emailPattern = "[a-zA-Z0-9._-]+@[a-z]+\\.+[a-z]+".toRegex()
-    emailError.value = null
+//    val emailPattern = "[a-zA-Z0-9._-]+@[a-z]+\\.+[a-z]+".toRegex()
+    userNameError.value = null
     passwordError.value = null
 
     when {
-        email.trim().isEmpty() || password.trim().isEmpty() -> {
-            if (email.trim().isEmpty()) emailError.value = "Enter Email"
+        username.trim().isEmpty() || password.trim().isEmpty() -> {
+            if (username.trim().isEmpty()) userNameError.value = "Enter Email"
             if (password.trim().isEmpty()) passwordError.value = "Enter Password"
             Log.d("TAG", "Enter Credentials First")
             return false
         }
 
-        !email.matches(emailPattern) -> {
-            emailError.value = "Invalid Email Address"
-            Log.d("TAG", "Invalid Email Address")
-            return false
-        }
+//        !email.matches(emailPattern) -> {
+//            emailError.value = "Invalid Email Address"
+//            Log.d("TAG", "Invalid Email Address")
+//            return false
+//        }
 
         else -> {
             Log.d("TAG", "validated Inputs xD xD")
@@ -234,15 +258,16 @@ fun validateInputs(
     }
 }
 
-suspend fun callApi(email: String, password: String, context: Context): Boolean {
+suspend fun callApi(email: String, password: String, context: Context, fcm_token: String): Boolean {
     return suspendCancellableCoroutine { continuation ->
+
         ServiceBuilder.buildService(RetrofitInterface::class.java)
-            .login(email, password, "1", "dmfklerfrjkhrjkth")
+            .login(email, password, "1", fcm_token)
             .enqueue(object : Callback<LoginResponse> {
                 override fun onResponse(
                     call: Call<LoginResponse>, response: Response<LoginResponse>
                 ) {
-                    if (response.isSuccessful && response.body()?.Success == true) {
+                    if (response.isSuccessful && response.body()!!.Success) {
 
                         Log.d(TAG, "onResponse: ${response.body()?.message}")
                         context.startActivity(Intent(context, HomeActivity::class.java))
@@ -251,7 +276,8 @@ suspend fun callApi(email: String, password: String, context: Context): Boolean 
 
                     } else {
                         continuation.resume(false)
-                        Toast.makeText(context, response.body()?.message, Toast.LENGTH_SHORT).show()
+//                        Toast.makeText(context, response.body()?.message, Toast.LENGTH_SHORT).show()
+                        Log.d(TAG, "onResponse: ${response.body()?.message}")
                     }
                 }
 
