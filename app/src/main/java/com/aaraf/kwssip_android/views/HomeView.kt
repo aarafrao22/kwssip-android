@@ -81,8 +81,7 @@ fun HomeView() {
         ) { result: ActivityResult ->
             if (result.resultCode == Activity.RESULT_OK) {
                 imageUris = imageUris.toMutableList().apply {
-                    this[index] =
-                        result.data?.data as Nothing?
+                    this[index] = result.data?.data as Nothing?
                 }
                 selectedImageCount++
             }
@@ -172,7 +171,7 @@ fun HomeView() {
 
 
         if (isSheetPresented) {
-            RatingBottomSheet(onDismiss = { isSheetPresented = false })
+            RatingBottomSheet(onDismiss = { isSheetPresented = false }, imageUris)
         }
 
         Spacer(modifier = Modifier.weight(1f))
@@ -182,7 +181,7 @@ fun HomeView() {
                 showAlertDialog.value = false
                 onDismiss()
             },
-                title = { Text("Log Out?") },
+                title = { Text("Logout?") },
                 text = { Text("Are you sure, do you wanna log out?") },
                 dismissButton = {
                     Button(
@@ -220,9 +219,7 @@ fun HomeView() {
                 .clip(CircleShape)
                 .background(colorResource(id = R.color.dark_blue))
                 .clickable(onClick = {
-
                     showAlertDialog.value = true
-
                 })
         ) {
             Icon(
@@ -238,8 +235,7 @@ fun HomeView() {
 }
 
 fun onDismiss() {
-
-
+    Log.d(TAG, "onDismiss: ")
 }
 
 fun clearAppId(context: Context) {

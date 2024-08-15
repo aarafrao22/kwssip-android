@@ -1,7 +1,10 @@
 package com.aaraf.kwssip_android.views
 
 import android.content.ContentValues.TAG
+import android.content.Context
+import android.content.Context.MODE_PRIVATE
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -22,25 +25,41 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aaraf.kwssip_android.R
+import com.aaraf.kwssip_android.model.LoginResponse
+import com.aaraf.kwssip_android.network.RetrofitInterface
+import com.aaraf.kwssip_android.network.ServiceBuilder
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RatingBottomSheet(onDismiss: () -> Unit) {
+fun RatingBottomSheet(onDismiss: () -> Unit, imageUris: List<Nothing?>) {
+
     val name = rememberSaveable { mutableStateOf("") }
+    val context = LocalContext.current
     val comment = rememberSaveable { mutableStateOf("") }
+    val phone = rememberSaveable { mutableStateOf("") }
     val commentError = rememberSaveable { mutableStateOf<String?>(null) }
     val bottomSheetState = rememberModalBottomSheetState(false)
     val showAlertDialog = remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope() // For starting the activity
 
     ModalBottomSheet(
         onDismissRequest = { onDismiss() },
@@ -110,8 +129,8 @@ fun RatingBottomSheet(onDismiss: () -> Unit) {
 
                 // Second CustomTextFieldBottomSheet for Phone
                 CustomTextFieldBottomSheet(
-                    value = comment.value,
-                    onValueChange = { comment.value = it },
+                    value = phone.value,
+                    onValueChange = { phone.value = it },
                     placeholder = "Phone",
                     errorMessage = commentError.value,
                     modifier = Modifier
@@ -138,8 +157,21 @@ fun RatingBottomSheet(onDismiss: () -> Unit) {
 
             Button(
                 onClick = {
+                    val driverID = getSavedAppId(context)
                     // Simulate image upload and show the alert dialog
                     showAlertDialog.value = uploadedImages()
+                    coroutineScope.launch {
+                        upload(
+                            name.value,
+                            comment.value,
+                            context,
+                            phone.value,
+                            5,
+                            Integer.valueOf(driverID),
+                            imageUris
+                        )
+                    }
+
                 }, colors = ButtonDefaults.buttonColors(
                     containerColor = Color.White,
                     contentColor = colorResource(id = R.color.theme_blue)
@@ -177,9 +209,70 @@ fun RatingBottomSheet(onDismiss: () -> Unit) {
     }
 }
 
+private fun getSavedAppId(context: Context): String {
+    val sharedPreferences = context.getSharedPreferences("MySharedPref", MODE_PRIVATE)
+    val appId = sharedPreferences.getString("appId", "").orEmpty()
+
+    Log.d(TAG, if (appId.isNotEmpty()) "App ID retrieved: $appId" else "No App ID found")
+    return appId
+}
+
 fun uploadedImages(): Boolean {
     Log.d(TAG, "uploadImages: ")
+
     return true
+}
+
+suspend fun upload(
+    customerName: String,
+    customerFeedback: String,
+    context: Context,
+    customerContact: String,
+    rating: Int,
+    driverId: Int,
+    imageUris: List<Nothing?>
+): Boolean {
+    return suspendCancellableCoroutine { continuation ->
+
+        ServiceBuilder.buildService(RetrofitInterface::class.java)
+            .sendFeedback(
+                driverId,
+                customerName,
+                customerFeedback,
+                customerContact,
+                rating,
+                imageUris[0],
+                imageUris[1],
+                imageUris[2],
+                imageUris[3],
+                imageUris[4]
+            )
+            .enqueue(object : Callback<LoginResponse> {
+                override fun onResponse(
+                    call: Call<LoginResponse>, response: Response<LoginResponse>
+                ) {
+                    if (response.isSuccessful && response.body()!!.Success) {
+
+                        Log.d(TAG, "onResponse: ${response.body()?.message}")
+//                        context.startActivity(Intent(context, HomeActivity::class.java))
+//                        saveLoginId(response.body()!!.app_id)
+//                        (context as? Activity)?.finish() // Finish the LoginActivity
+                        continuation.resume(true)
+
+                    } else {
+                        continuation.resume(false)
+                        Toast.makeText(context, response.body()?.message, Toast.LENGTH_SHORT).show()
+                        Log.d(TAG, "onResponse: ${response.body()?.message}")
+                    }
+                }
+
+
+                override fun onFailure(call: Call<LoginResponse>, t: Throwable) {
+                    Log.d(TAG, "onFailure: ${t.message}")
+                    continuation.resumeWithException(t)
+                }
+            })
+    }
 }
 
 

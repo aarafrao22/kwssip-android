@@ -91,5 +91,6 @@ class SplashActivity : ComponentActivity() {
                 Log.e(TAG, "Error getting FCM token: ${task.exception}")
             }
         }
+        Log.d(TAG, "generateFCMToken: $FCM_TOKEN")
     }
 }
