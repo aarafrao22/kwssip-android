@@ -72,6 +72,7 @@ fun HomeView() {
     val showAlertDialog = remember { mutableStateOf(false) }
     var selectedImageCount by remember { mutableIntStateOf(0) }
     var imageUris by remember { mutableStateOf(List(5) { null }) }
+    var imageDatas by remember { mutableStateOf(List(5) { null }) }
 
     val context = LocalContext.current as Activity
 

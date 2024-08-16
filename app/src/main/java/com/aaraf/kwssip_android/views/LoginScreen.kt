@@ -266,7 +266,8 @@ suspend fun callApi(email: String, password: String, context: Context, fcm_token
             .login(email, password, "1", fcm_token)
             .enqueue(object : Callback<LoginResponse> {
                 override fun onResponse(
-                    call: Call<LoginResponse>, response: Response<LoginResponse>
+                    call: Call<LoginResponse>,
+                    response: Response<LoginResponse>
                 ) {
                     if (response.isSuccessful && response.body()!!.Success) {
 
@@ -281,6 +282,7 @@ suspend fun callApi(email: String, password: String, context: Context, fcm_token
                         Toast.makeText(context, response.body()?.message, Toast.LENGTH_SHORT).show()
                         Log.d(TAG, "onResponse: ${response.body()?.message}")
                     }
+
                 }
 
                 private fun saveLoginId(appId: Int) {
