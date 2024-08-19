@@ -71,7 +71,7 @@ fun HomeView() {
     var isSheetPresented by remember { mutableStateOf(false) }
     val showAlertDialog = remember { mutableStateOf(false) }
     var selectedImageCount by remember { mutableIntStateOf(0) }
-    var imageUris by remember { mutableStateOf(List(5) { null }) }
+    var imageUris by remember { mutableStateOf(List(5) { null as Uri? }) }
     var imageDatas by remember { mutableStateOf(List(5) { null }) }
 
     val context = LocalContext.current as Activity
@@ -82,7 +82,7 @@ fun HomeView() {
         ) { result: ActivityResult ->
             if (result.resultCode == Activity.RESULT_OK) {
                 imageUris = imageUris.toMutableList().apply {
-                    this[index] = result.data?.data as Nothing?
+                    this[index] = result.data?.data
                 }
                 selectedImageCount++
             }
@@ -90,7 +90,10 @@ fun HomeView() {
     }
 
     Column(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFFFFFFF)),
+
     ) {
         Spacer(modifier = Modifier.weight(1f))
 
@@ -127,10 +130,11 @@ fun HomeView() {
                                 selectedImage = imageUris[index],
                                 onClick = {
                                     ImagePicker.with(context)
-                                        .galleryOnly()
                                         .crop()
+                                        .galleryOnly()
                                         .createIntent { intent ->
                                             imagePickers[index].launch(intent)
+
                                         }
                                 }
                             )

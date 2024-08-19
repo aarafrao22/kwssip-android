@@ -3,6 +3,9 @@ package com.aaraf.kwssip_android.views
 import android.content.ContentValues.TAG
 import android.content.Context
 import android.content.Context.MODE_PRIVATE
+import android.database.Cursor
+import android.net.Uri
+import android.provider.MediaStore
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -42,15 +45,20 @@ import com.aaraf.kwssip_android.network.RetrofitInterface
 import com.aaraf.kwssip_android.network.ServiceBuilder
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody.Part.Companion.createFormData
+import okhttp3.RequestBody
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import java.io.File
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RatingBottomSheet(onDismiss: () -> Unit, imageUris: List<Nothing?>) {
+fun RatingBottomSheet(onDismiss: () -> Unit, imageUris: List<Uri?>) {
 
     val name = rememberSaveable { mutableStateOf("") }
     val context = LocalContext.current
@@ -193,10 +201,14 @@ fun RatingBottomSheet(onDismiss: () -> Unit, imageUris: List<Nothing?>) {
             onDismiss()
         },
             title = { Text("Uploaded Successfully") },
+
             text = { Text("Thanks For Uploading Images, Ahmed") },
             confirmButton = {
                 Button(
                     onClick = {
+
+                        Log.d(TAG, "RatingBottomSheet: $name $phone $comment")
+
                         showAlertDialog.value = false
                         onDismiss()
                     }, colors = ButtonDefaults.buttonColors(
@@ -222,7 +234,17 @@ fun uploadedImages(): Boolean {
 
     return true
 }
-
+fun getPath(uri: Uri?, context: Context): String? {
+    val projection = arrayOf(MediaStore.Images.Media.DATA)
+    val cursor: Cursor =
+        uri?.let { context.contentResolver.query(it, projection, null, null, null) }
+            ?: return null
+    val column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
+    cursor.moveToFirst()
+    val s = cursor.getString(column_index)
+    cursor.close()
+    return s
+}
 suspend fun upload(
     customerName: String,
     customerFeedback: String,
@@ -230,9 +252,30 @@ suspend fun upload(
     customerContact: String,
     rating: Int,
     driverId: Int,
-    imageUris: List<Nothing?>
+    imageUris: List<Uri?>
 ): Boolean {
     return suspendCancellableCoroutine { continuation ->
+
+        // Create MultipartBody.Part for each image URI, ensuring you handle up to 5 images
+        val parts = imageUris.mapIndexed { index, uri ->
+            uri?.let {
+                val requestFile: RequestBody =
+                    RequestBody.create("*/*".toMediaTypeOrNull(), File(it.path!!))
+
+                createFormData(
+                    "img${index + 1}",
+                    it.lastPathSegment ?: "image${index + 1}",
+                    requestFile
+                )
+            }
+        }.take(5) // Limit to 5 images as per the method signature
+
+        // Extract the parts or set to null if not available
+        val img1 = parts.getOrNull(0)
+        val img2 = parts.getOrNull(1)
+        val img3 = parts.getOrNull(2)
+        val img4 = parts.getOrNull(3)
+        val img5 = parts.getOrNull(4)
 
         ServiceBuilder.buildService(RetrofitInterface::class.java)
             .sendFeedback(
@@ -241,31 +284,25 @@ suspend fun upload(
                 customerFeedback,
                 customerContact,
                 rating,
-                imageUris[0],
-                imageUris[1],
-                imageUris[2],
-                imageUris[3],
-                imageUris[4]
+                img1,
+                img2,
+                img3,
+                img4,
+                img5
             )
             .enqueue(object : Callback<LoginResponse> {
                 override fun onResponse(
                     call: Call<LoginResponse>, response: Response<LoginResponse>
                 ) {
                     if (response.isSuccessful && response.body()!!.Success) {
-
                         Log.d(TAG, "onResponse: ${response.body()?.message}")
-//                        context.startActivity(Intent(context, HomeActivity::class.java))
-//                        saveLoginId(response.body()!!.app_id)
-//                        (context as? Activity)?.finish() // Finish the LoginActivity
                         continuation.resume(true)
-
                     } else {
                         continuation.resume(false)
                         Toast.makeText(context, response.body()?.message, Toast.LENGTH_SHORT).show()
                         Log.d(TAG, "onResponse: ${response.body()?.message}")
                     }
                 }
-
 
                 override fun onFailure(call: Call<LoginResponse>, t: Throwable) {
                     Log.d(TAG, "onFailure: ${t.message}")
@@ -274,5 +311,6 @@ suspend fun upload(
             })
     }
 }
+
 
 

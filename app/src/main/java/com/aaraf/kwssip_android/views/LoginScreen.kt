@@ -2,6 +2,7 @@ package com.aaraf.kwssip_android.views
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.app.ProgressDialog
 import android.content.ContentValues.TAG
 import android.content.Context
 import android.content.Context.MODE_PRIVATE
@@ -36,8 +37,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
@@ -77,7 +80,7 @@ fun LoginScreen() {
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFF0F0F0)),
-        contentAlignment = Alignment.Center
+        contentAlignment = Center
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -134,7 +137,7 @@ fun LoginScreen() {
                 shape = RoundedCornerShape(32.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = colorResource(id = R.color.theme_blue),
-                    contentColor = Color.White
+                    contentColor = White
                 ),
                 onClick = {
                     if (validateInputs(
@@ -143,8 +146,7 @@ fun LoginScreen() {
                     ) coroutineScope.launch {
 
                         var fcm_token = getSavedToken(context)
-                        if (fcm_token.equals(""))
-                            fcm_token = FCM_TOKEN
+                        if (fcm_token.equals("")) fcm_token = FCM_TOKEN
 
                         callApi(username.value, password.value, context, fcm_token!!)
 
@@ -161,10 +163,13 @@ fun LoginScreen() {
                 Text(text = "Login")
             }
 
+
+
             Spacer(modifier = Modifier.height(80.dp))
         }
     }
 }
+
 
 private fun getSavedToken(context: Context): String? {
     val sharedPreferences: SharedPreferences =
@@ -196,7 +201,7 @@ fun loginField(
             value = value,
             colors = TextFieldDefaults.textFieldColors(
                 disabledTextColor = Color.Transparent,
-                containerColor = Color.White,
+                containerColor = White,
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent,
                 disabledIndicatorColor = Color.Transparent
@@ -262,44 +267,59 @@ fun validateInputs(
 suspend fun callApi(email: String, password: String, context: Context, fcm_token: String): Boolean {
     return suspendCancellableCoroutine { continuation ->
 
-        ServiceBuilder.buildService(RetrofitInterface::class.java)
-            .login(email, password, "1", fcm_token)
-            .enqueue(object : Callback<LoginResponse> {
-                override fun onResponse(
-                    call: Call<LoginResponse>,
-                    response: Response<LoginResponse>
-                ) {
-                    if (response.isSuccessful && response.body()!!.Success) {
+        // Create and show the loading dialog
+        val progressDialog = ProgressDialog(context)
+        progressDialog.setMessage("Loading...")
+        progressDialog.setCancelable(false) // Optional: Prevent the user from canceling the dialog
+        progressDialog.show()
 
-                        Log.d(TAG, "onResponse: ${response.body()?.message}")
-                        context.startActivity(Intent(context, HomeActivity::class.java))
-                        saveLoginId(response.body()!!.app_id)
-                        (context as? Activity)?.finish() // Finish the LoginActivity
-                        continuation.resume(true)
+        try {
+            ServiceBuilder.buildService(RetrofitInterface::class.java)
+                .login(email, password, "1", fcm_token).enqueue(object : Callback<LoginResponse> {
+                    override fun onResponse(
+                        call: Call<LoginResponse>, response: Response<LoginResponse>
+                    ) {
+                        progressDialog.dismiss()
 
-                    } else {
-                        continuation.resume(false)
-                        Toast.makeText(context, response.body()?.message, Toast.LENGTH_SHORT).show()
-                        Log.d(TAG, "onResponse: ${response.body()?.message}")
+                        if (response.isSuccessful && response.body()!!.Success) {
+
+                            Log.d(TAG, "onResponse: ${response.body()?.message}")
+                            context.startActivity(Intent(context, HomeActivity::class.java))
+                            saveLoginId(response.body()!!.app_id)
+                            (context as? Activity)?.finish() // Finish the LoginActivity
+                            continuation.resume(true)
+
+                        } else {
+                            continuation.resume(false)
+                            Toast.makeText(context, response.body()?.message, Toast.LENGTH_SHORT)
+                                .show()
+                            Log.d(TAG, "onResponse: ${response.body()?.message}")
+                        }
+
                     }
 
-                }
+                    private fun saveLoginId(appId: Int) {
+                        val sharedPreferences =
+                            context.getSharedPreferences("MySharedPref", MODE_PRIVATE)
+                        val myEdit = sharedPreferences.edit()
 
-                private fun saveLoginId(appId: Int) {
-                    val sharedPreferences =
-                        context.getSharedPreferences("MySharedPref", MODE_PRIVATE)
-                    val myEdit = sharedPreferences.edit()
+                        myEdit.putString("appId", appId.toString())
+                        Log.d(TAG, "saveUpdatedToken: appId $appId")
+                        myEdit.apply()
 
-                    myEdit.putString("appId", appId.toString())
-                    Log.d(TAG, "saveUpdatedToken: appId $appId")
-                    myEdit.apply()
+                    }
 
-                }
+                    override fun onFailure(call: Call<LoginResponse>, t: Throwable) {
+                        Log.d(TAG, "onFailure: ${t.message}")
+                        Toast.makeText(context, t.message, Toast.LENGTH_SHORT).show()
+                        continuation.resumeWithException(t)
+                        progressDialog.dismiss()
 
-                override fun onFailure(call: Call<LoginResponse>, t: Throwable) {
-                    Log.d(TAG, "onFailure: ${t.message}")
-                    continuation.resumeWithException(t)
-                }
-            })
+                    }
+                })
+        } catch (e: Exception) {
+            Toast.makeText(context, e.message, Toast.LENGTH_SHORT).show()
+        }
+
     }
 }
