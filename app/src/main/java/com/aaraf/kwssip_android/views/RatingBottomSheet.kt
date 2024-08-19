@@ -3,9 +3,7 @@ package com.aaraf.kwssip_android.views
 import android.content.ContentValues.TAG
 import android.content.Context
 import android.content.Context.MODE_PRIVATE
-import android.database.Cursor
 import android.net.Uri
-import android.provider.MediaStore
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -48,6 +46,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody.Part.Companion.createFormData
 import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -174,7 +173,7 @@ fun RatingBottomSheet(onDismiss: () -> Unit, imageUris: List<Uri?>) {
                             comment.value,
                             context,
                             phone.value,
-                            5,
+                            rating = 5,
                             Integer.valueOf(driverID),
                             imageUris
                         )
@@ -207,7 +206,7 @@ fun RatingBottomSheet(onDismiss: () -> Unit, imageUris: List<Uri?>) {
                 Button(
                     onClick = {
 
-                        Log.d(TAG, "RatingBottomSheet: $name $phone $comment")
+                        Log.d(TAG, "RatingBottomSheet: name: $name phone: $phone connect: $comment")
 
                         showAlertDialog.value = false
                         onDismiss()
@@ -234,17 +233,7 @@ fun uploadedImages(): Boolean {
 
     return true
 }
-fun getPath(uri: Uri?, context: Context): String? {
-    val projection = arrayOf(MediaStore.Images.Media.DATA)
-    val cursor: Cursor =
-        uri?.let { context.contentResolver.query(it, projection, null, null, null) }
-            ?: return null
-    val column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
-    cursor.moveToFirst()
-    val s = cursor.getString(column_index)
-    cursor.close()
-    return s
-}
+
 suspend fun upload(
     customerName: String,
     customerFeedback: String,
@@ -255,6 +244,18 @@ suspend fun upload(
     imageUris: List<Uri?>
 ): Boolean {
     return suspendCancellableCoroutine { continuation ->
+        // Clean the strings to avoid double quotes issues
+        val nameBody = customerName.trim()
+            .toRequestBody("text/plain".toMediaTypeOrNull())
+        val feedbackBody = customerFeedback.trim()
+            .toRequestBody("text/plain".toMediaTypeOrNull())
+        val contactBody = customerContact.trim()
+            .toRequestBody("text/plain".toMediaTypeOrNull())
+//        val ratingBody = rating.toString()
+//            .toRequestBody("text/plain".toMediaTypeOrNull())
+//        val driverIdBody = driverId.toString()
+//            .toRequestBody("text/plain".toMediaTypeOrNull())
+
 
         // Create MultipartBody.Part for each image URI, ensuring you handle up to 5 images
         val parts = imageUris.mapIndexed { index, uri ->
@@ -280,15 +281,15 @@ suspend fun upload(
         ServiceBuilder.buildService(RetrofitInterface::class.java)
             .sendFeedback(
                 driverId,
-                customerName,
-                customerFeedback,
-                customerContact,
-                rating,
-                img1,
-                img2,
-                img3,
-                img4,
-                img5
+                CustomerName = nameBody,
+                CustomerFeedback = feedbackBody,
+                CustomerContact = contactBody,
+                Rating = rating,
+                img1 = img1,
+                img2 = img2,
+                img3 = img3,
+                img4 = img4,
+                img5 = img5
             )
             .enqueue(object : Callback<LoginResponse> {
                 override fun onResponse(
