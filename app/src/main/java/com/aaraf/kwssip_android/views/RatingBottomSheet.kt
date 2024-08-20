@@ -16,7 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomSheetDefaults
@@ -34,11 +34,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aaraf.kwssip_android.R
@@ -82,8 +82,6 @@ fun RatingBottomSheet(onDismiss: () -> Unit, imageUris: List<Uri?>) {
         Column(
             modifier = Modifier
                 .verticalScroll(rememberScrollState(), reverseScrolling = true)
-                .clip(RoundedCornerShape(topStart = 48.dp, topEnd = 48.dp))
-                .background(Color(0xFF3EB3E0))
         ) {
 //            Spacer(modifier = Modifier.height(16.dp)) // Reduced space at the top
 
@@ -104,9 +102,34 @@ fun RatingBottomSheet(onDismiss: () -> Unit, imageUris: List<Uri?>) {
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             ) {
                 repeat(5) { index ->
-                    ImageCard(imageResId = R.drawable.img1 + index, onClick = {
-                        rating.intValue = index + 1
-                    })
+                    ImageCard(
+                        imageResId = R.drawable.img1 + index,
+                        onClick = {
+                            rating.intValue = index + 1
+                            when (rating.intValue) {
+                                1 -> {
+                                    Toast.makeText(context, "Worst", Toast.LENGTH_SHORT).show()
+                                }
+
+                                2 -> {
+                                    Toast.makeText(context, "Bad", Toast.LENGTH_SHORT).show()
+                                }
+
+                                3 -> {
+                                    Toast.makeText(context, "Neutral", Toast.LENGTH_SHORT).show()
+                                }
+
+                                4 -> {
+                                    Toast.makeText(context, "Good", Toast.LENGTH_SHORT).show()
+                                }
+
+                                5 -> {
+                                    Toast.makeText(context, "Excellent", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        }
+
+                    )
                 }
             }
 
@@ -147,6 +170,7 @@ fun RatingBottomSheet(onDismiss: () -> Unit, imageUris: List<Uri?>) {
                     value = phone.value,
                     onValueChange = { phone.value = it },
                     placeholder = "Phone",
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     errorMessage = commentError.value,
                     modifier = Modifier
                         .align(Alignment.CenterVertically)

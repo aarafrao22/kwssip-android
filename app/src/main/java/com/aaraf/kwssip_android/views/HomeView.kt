@@ -45,6 +45,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -64,6 +65,7 @@ import coil.compose.rememberAsyncImagePainter
 import com.aaraf.kwssip_android.LoginActivity
 import com.aaraf.kwssip_android.R
 import com.github.dhaval2404.imagepicker.ImagePicker
+import kotlinx.coroutines.launch
 
 
 @Composable
@@ -72,8 +74,7 @@ fun HomeView() {
     val showAlertDialog = remember { mutableStateOf(false) }
     var selectedImageCount by remember { mutableIntStateOf(0) }
     var imageUris by remember { mutableStateOf(List(5) { null as Uri? }) }
-    var imageDatas by remember { mutableStateOf(List(5) { null }) }
-
+    val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current as Activity
 
     val imagePickers = List(5) { index ->
@@ -93,8 +94,7 @@ fun HomeView() {
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFFFFFFF)),
-
-        ) {
+    ) {
         Spacer(modifier = Modifier.weight(1f))
 
         Text(
@@ -130,12 +130,15 @@ fun HomeView() {
                                 selectedImage = imageUris[index],
                                 onClick = {
 
-                                    ImagePicker.with(context)
-                                        .crop(480f, 480f)
-                                        .cameraOnly()
-                                        .createIntent { intent ->
-                                            imagePickers[index].launch(intent)
-                                        }
+                                    coroutineScope.launch {
+                                        ImagePicker.with(context)
+                                            .cameraOnly()
+                                            .crop(512f, 512f)
+                                            .maxResultSize(512, 512)
+                                            .createIntent { intent ->
+                                                imagePickers[index].launch(intent)
+                                            }
+                                    }
                                 }
                             )
                         }
@@ -306,12 +309,17 @@ fun IndicatorView(index: String, isSelected: Boolean) {
     }
 }
 
+
 @Composable
-fun ImageCard(imageResId: Int, onClick: () -> Unit) {
+fun ImageCard(
+    imageResId: Int,
+    onClick: () -> Unit
+) {
+
     Box(
         modifier = Modifier
-            .height(60.dp)
-            .width(60.dp)
+            .height(54.dp)
+            .width(54.dp)
             .clip(CircleShape)
             .clickable(onClick = onClick)
     ) {
@@ -319,8 +327,9 @@ fun ImageCard(imageResId: Int, onClick: () -> Unit) {
             painter = painterResource(id = imageResId),
             contentDescription = "Image $imageResId",
             contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
         )
+
     }
 }
 
@@ -358,7 +367,6 @@ fun CustomTextFieldBottomSheet(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(bottom = 18.dp) // Adjust the padding as needed
                 ) {
                     Text(
                         text = placeholder,
