@@ -25,11 +25,11 @@ interface RetrofitInterface {
     @Multipart
     @POST("feedback.php")
     fun sendFeedback(
-        @Part("Driver_id") Driver_id: Any?,
-        @Part("CustomerName") CustomerName: Any?,
-        @Part("CustomerFeedback") CustomerFeedback: Any?,
-        @Part("CustomerContact") CustomerContact: Any?,
-        @Part("Rating") Rating: Any?,
+        @Part Driver_id: MultipartBody.Part?,
+        @Part CustomerName: MultipartBody.Part?,
+        @Part CustomerFeedback: MultipartBody.Part?,
+        @Part CustomerContact: MultipartBody.Part?,
+        @Part Rating: MultipartBody.Part?,
         @Part img1: MultipartBody.Part?,
         @Part img2: MultipartBody.Part?,
         @Part img3: MultipartBody.Part?,

@@ -44,9 +44,9 @@ import com.aaraf.kwssip_android.network.ServiceBuilder
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
 import okhttp3.MultipartBody.Part.Companion.createFormData
 import okhttp3.RequestBody
-import okhttp3.RequestBody.Companion.toRequestBody
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -244,17 +244,14 @@ suspend fun upload(
     imageUris: List<Uri?>
 ): Boolean {
     return suspendCancellableCoroutine { continuation ->
-        // Clean the strings to avoid double quotes issues
-        val nameBody = customerName.trim()
-            .toRequestBody("text/plain".toMediaTypeOrNull())
-        val feedbackBody = customerFeedback.trim()
-            .toRequestBody("text/plain".toMediaTypeOrNull())
-        val contactBody = customerContact.trim()
-            .toRequestBody("text/plain".toMediaTypeOrNull())
-//        val ratingBody = rating.toString()
-//            .toRequestBody("text/plain".toMediaTypeOrNull())
-//        val driverIdBody = driverId.toString()
-//            .toRequestBody("text/plain".toMediaTypeOrNull())
+
+        val customerNameM = MultipartBody.Part.createFormData("CustomerName", customerName)
+        val customerContactM = MultipartBody.Part.createFormData("CustomerContact", customerContact)
+        val customerFeedbackM =
+            MultipartBody.Part.createFormData("CustomerFeedback", customerFeedback)
+        val ratingM = MultipartBody.Part.createFormData("Rating", rating.toString())
+        val driverIdM =
+            MultipartBody.Part.createFormData("Driver_id", driverId.toString())
 
 
         // Create MultipartBody.Part for each image URI, ensuring you handle up to 5 images
@@ -280,11 +277,11 @@ suspend fun upload(
 
         ServiceBuilder.buildService(RetrofitInterface::class.java)
             .sendFeedback(
-                driverId,
-                CustomerName = nameBody,
-                CustomerFeedback = feedbackBody,
-                CustomerContact = contactBody,
-                Rating = rating,
+                Driver_id = driverIdM,
+                CustomerName = customerNameM,
+                CustomerFeedback = customerFeedbackM,
+                CustomerContact = customerContactM,
+                Rating = ratingM,
                 img1 = img1,
                 img2 = img2,
                 img3 = img3,

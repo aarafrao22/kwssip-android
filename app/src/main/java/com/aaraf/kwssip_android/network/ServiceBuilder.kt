@@ -14,6 +14,8 @@ object ServiceBuilder {
     private val gson = GsonBuilder()
         .setLenient()  // Allows the parser to be lenient when reading JSON
         .create()
+
+
     private val okHttpClient = OkHttpClient().newBuilder().connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(15, TimeUnit.SECONDS).addInterceptor(interceptor)
         .writeTimeout(15, TimeUnit.SECONDS).build()

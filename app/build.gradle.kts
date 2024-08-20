@@ -94,5 +94,6 @@ dependencies {
     implementation("com.github.dhaval2404:imagepicker:2.1")
     implementation("io.coil-kt:coil-compose:2.1.0")
     implementation("io.github.chochanaresh:filepicker:+")
+    implementation("com.squareup.retrofit2:converter-scalars:2.9.0")
 
 }
