@@ -94,7 +94,7 @@ fun HomeView() {
             .fillMaxSize()
             .background(Color(0xFFFFFFFF)),
 
-    ) {
+        ) {
         Spacer(modifier = Modifier.weight(1f))
 
         Text(
@@ -129,12 +129,12 @@ fun HomeView() {
                             ImagePickerView(
                                 selectedImage = imageUris[index],
                                 onClick = {
+
                                     ImagePicker.with(context)
-                                        .crop()
-                                        .galleryOnly()
+                                        .crop(480f, 480f)
+                                        .cameraOnly()
                                         .createIntent { intent ->
                                             imagePickers[index].launch(intent)
-
                                         }
                                 }
                             )
@@ -307,20 +307,19 @@ fun IndicatorView(index: String, isSelected: Boolean) {
 }
 
 @Composable
-fun ImageCard(imageResId: Int) {
-    // You can replace this with your actual image loading logic
-    Box {
-        // Placeholder for image
-//        Text(text = path, color = Color.White, modifier = Modifier.align(Alignment.Center))
+fun ImageCard(imageResId: Int, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .height(60.dp)
+            .width(60.dp)
+            .clip(CircleShape)
+            .clickable(onClick = onClick)
+    ) {
         Image(
             painter = painterResource(id = imageResId),
-            contentDescription = "Splash Background",
+            contentDescription = "Image $imageResId",
             contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .height(60.dp) // Adjust the height as needed
-                .width(60.dp)  // Adjust the width as needed
-                .clip(CircleShape)
-
+            modifier = Modifier.fillMaxSize()
         )
     }
 }
@@ -334,8 +333,7 @@ fun CustomTextFieldBottomSheet(
     errorMessage: String?,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     modifier: Modifier,
-
-    ) {
+) {
     Column(modifier = modifier) {
         TextField(
             value = value,
@@ -360,7 +358,7 @@ fun CustomTextFieldBottomSheet(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(top = 4.dp) // Adjust the padding as needed
+                        .padding(bottom = 18.dp) // Adjust the padding as needed
                 ) {
                     Text(
                         text = placeholder,

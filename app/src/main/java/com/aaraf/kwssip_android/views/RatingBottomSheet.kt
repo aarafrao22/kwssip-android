@@ -1,5 +1,6 @@
 package com.aaraf.kwssip_android.views
 
+import android.app.ProgressDialog
 import android.content.ContentValues.TAG
 import android.content.Context
 import android.content.Context.MODE_PRIVATE
@@ -14,7 +15,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
@@ -24,6 +27,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -44,7 +48,6 @@ import com.aaraf.kwssip_android.network.ServiceBuilder
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.MultipartBody
 import okhttp3.MultipartBody.Part.Companion.createFormData
 import okhttp3.RequestBody
 import retrofit2.Call
@@ -63,6 +66,7 @@ fun RatingBottomSheet(onDismiss: () -> Unit, imageUris: List<Uri?>) {
     val context = LocalContext.current
     val comment = rememberSaveable { mutableStateOf("") }
     val phone = rememberSaveable { mutableStateOf("") }
+    val rating = rememberSaveable { mutableIntStateOf(0) }
     val commentError = rememberSaveable { mutableStateOf<String?>(null) }
     val bottomSheetState = rememberModalBottomSheetState(false)
     val showAlertDialog = remember { mutableStateOf(false) }
@@ -72,17 +76,19 @@ fun RatingBottomSheet(onDismiss: () -> Unit, imageUris: List<Uri?>) {
         onDismissRequest = { onDismiss() },
         sheetState = bottomSheetState,
         modifier = Modifier.background(Color(0x884B4B4B)),
+        containerColor = Color(0xFF3EB3E0),
         dragHandle = { BottomSheetDefaults.DragHandle() },
     ) {
         Column(
             modifier = Modifier
+                .verticalScroll(rememberScrollState(), reverseScrolling = true)
                 .clip(RoundedCornerShape(topStart = 48.dp, topEnd = 48.dp))
                 .background(Color(0xFF3EB3E0))
         ) {
-            Spacer(modifier = Modifier.height(16.dp)) // Reduced space at the top
+//            Spacer(modifier = Modifier.height(16.dp)) // Reduced space at the top
 
             Text(
-                text = "Give Ahmed a Rating!",
+                text = "Give a Rating!",
                 color = Color.White,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.SemiBold,
@@ -98,7 +104,9 @@ fun RatingBottomSheet(onDismiss: () -> Unit, imageUris: List<Uri?>) {
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             ) {
                 repeat(5) { index ->
-                    ImageCard(imageResId = R.drawable.img1 + index)
+                    ImageCard(imageResId = R.drawable.img1 + index, onClick = {
+                        rating.intValue = index + 1
+                    })
                 }
             }
 
@@ -155,7 +163,7 @@ fun RatingBottomSheet(onDismiss: () -> Unit, imageUris: List<Uri?>) {
                 placeholder = "Write Your Feedback",
                 errorMessage = commentError.value,
                 modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
+                    .fillMaxWidth()
                     .padding(start = 8.dp, end = 8.dp)
                     .height(160.dp),
             )
@@ -165,18 +173,25 @@ fun RatingBottomSheet(onDismiss: () -> Unit, imageUris: List<Uri?>) {
             Button(
                 onClick = {
                     val driverID = getSavedAppId(context)
-                    // Simulate image upload and show the alert dialog
+
                     showAlertDialog.value = uploadedImages()
                     coroutineScope.launch {
-                        upload(
-                            name.value,
+                        upload(name.value,
                             comment.value,
                             context,
                             phone.value,
                             rating = 5,
                             Integer.valueOf(driverID),
-                            imageUris
-                        )
+                            imageUris = imageUris,
+                            onFailure = {
+                                showAlertDialog.value = false
+                                Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+                            },
+                            onSuccess = {
+                                showAlertDialog.value = true
+                            })
+
+
                     }
 
                 }, colors = ButtonDefaults.buttonColors(
@@ -190,33 +205,34 @@ fun RatingBottomSheet(onDismiss: () -> Unit, imageUris: List<Uri?>) {
             }
 
             Spacer(modifier = Modifier.height(24.dp))
+            if (showAlertDialog.value) {
+                AlertDialog(onDismissRequest = {
+                    showAlertDialog.value = false
+                    onDismiss()
+                },
+                    title = { Text("Uploaded Successfully") },
+
+                    text = { Text("Thanks For Uploading Images") },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+
+                                Log.d(
+                                    TAG,
+                                    "RatingBottomSheet: name: $name phone: $phone connect: $comment"
+                                )
+
+                                showAlertDialog.value = false
+                                onDismiss()
+                            }, colors = ButtonDefaults.buttonColors(
+                                containerColor = colorResource(id = R.color.theme_blue)
+                            )
+                        ) {
+                            Text("OK")
+                        }
+                    })
+            }
         }
-    }
-
-    // Show AlertDialog separately from the ModalBottomSheet
-    if (showAlertDialog.value) {
-        AlertDialog(onDismissRequest = {
-            showAlertDialog.value = false
-            onDismiss()
-        },
-            title = { Text("Uploaded Successfully") },
-
-            text = { Text("Thanks For Uploading Images, Ahmed") },
-            confirmButton = {
-                Button(
-                    onClick = {
-
-                        Log.d(TAG, "RatingBottomSheet: name: $name phone: $phone connect: $comment")
-
-                        showAlertDialog.value = false
-                        onDismiss()
-                    }, colors = ButtonDefaults.buttonColors(
-                        containerColor = colorResource(id = R.color.theme_blue)
-                    )
-                ) {
-                    Text("OK")
-                }
-            })
     }
 }
 
@@ -241,72 +257,79 @@ suspend fun upload(
     customerContact: String,
     rating: Int,
     driverId: Int,
+    onSuccess: (String) -> Unit,
+    onFailure: (String) -> Unit,
     imageUris: List<Uri?>
 ): Boolean {
     return suspendCancellableCoroutine { continuation ->
 
-        val customerNameM = MultipartBody.Part.createFormData("CustomerName", customerName)
-        val customerContactM = MultipartBody.Part.createFormData("CustomerContact", customerContact)
-        val customerFeedbackM =
-            MultipartBody.Part.createFormData("CustomerFeedback", customerFeedback)
-        val ratingM = MultipartBody.Part.createFormData("Rating", rating.toString())
-        val driverIdM =
-            MultipartBody.Part.createFormData("Driver_id", driverId.toString())
+
+        val progressDialog = ProgressDialog(context)
+        progressDialog.setMessage("Loading...")
+        progressDialog.setCancelable(false) // Optional: Prevent the user from canceling the dialog
+        progressDialog.show()
 
 
-        // Create MultipartBody.Part for each image URI, ensuring you handle up to 5 images
+        val customerNameM = createFormData("CustomerName", customerName)
+        val customerContactM = createFormData("CustomerContact", customerContact)
+        val customerFeedbackM = createFormData("CustomerFeedback", customerFeedback)
+        val ratingM = createFormData("Rating", rating.toString())
+        val driverIdM = createFormData("Driver_id", driverId.toString())
+
+
         val parts = imageUris.mapIndexed { index, uri ->
             uri?.let {
                 val requestFile: RequestBody =
                     RequestBody.create("*/*".toMediaTypeOrNull(), File(it.path!!))
 
                 createFormData(
-                    "img${index + 1}",
-                    it.lastPathSegment ?: "image${index + 1}",
-                    requestFile
+                    "img${index + 1}", it.lastPathSegment ?: "image${index + 1}", requestFile
                 )
             }
-        }.take(5) // Limit to 5 images as per the method signature
+        }.take(5)
 
-        // Extract the parts or set to null if not available
         val img1 = parts.getOrNull(0)
         val img2 = parts.getOrNull(1)
         val img3 = parts.getOrNull(2)
         val img4 = parts.getOrNull(3)
         val img5 = parts.getOrNull(4)
 
-        ServiceBuilder.buildService(RetrofitInterface::class.java)
-            .sendFeedback(
-                Driver_id = driverIdM,
-                CustomerName = customerNameM,
-                CustomerFeedback = customerFeedbackM,
-                CustomerContact = customerContactM,
-                Rating = ratingM,
-                img1 = img1,
-                img2 = img2,
-                img3 = img3,
-                img4 = img4,
-                img5 = img5
-            )
-            .enqueue(object : Callback<LoginResponse> {
-                override fun onResponse(
-                    call: Call<LoginResponse>, response: Response<LoginResponse>
-                ) {
-                    if (response.isSuccessful && response.body()!!.Success) {
-                        Log.d(TAG, "onResponse: ${response.body()?.message}")
-                        continuation.resume(true)
-                    } else {
-                        continuation.resume(false)
-                        Toast.makeText(context, response.body()?.message, Toast.LENGTH_SHORT).show()
-                        Log.d(TAG, "onResponse: ${response.body()?.message}")
-                    }
+        ServiceBuilder.buildService(RetrofitInterface::class.java).sendFeedback(
+            Driver_id = driverIdM,
+            CustomerName = customerNameM,
+            CustomerFeedback = customerFeedbackM,
+            CustomerContact = customerContactM,
+            Rating = ratingM,
+            img1 = img1,
+            img2 = img2,
+            img3 = img3,
+            img4 = img4,
+            img5 = img5
+        ).enqueue(object : Callback<LoginResponse> {
+            override fun onResponse(
+                call: Call<LoginResponse>, response: Response<LoginResponse>
+            ) {
+                progressDialog.dismiss()
+                if (response.isSuccessful && response.body()!!.Success) {
+                    Log.d(TAG, "onResponse: ${response.body()?.message}")
+                    Toast.makeText(context, response.body()?.message, Toast.LENGTH_SHORT).show()
+                    onSuccess(response.body()?.message!!)
+                    continuation.resume(true)
+                } else {
+                    Toast.makeText(context, response.body()?.message, Toast.LENGTH_SHORT).show()
+                    onFailure(response.body()?.message!!)
+                    Log.d(TAG, "onResponse: ${response.body()?.message}")
+                    continuation.resume(false)
                 }
+            }
 
-                override fun onFailure(call: Call<LoginResponse>, t: Throwable) {
-                    Log.d(TAG, "onFailure: ${t.message}")
-                    continuation.resumeWithException(t)
-                }
-            })
+            override fun onFailure(call: Call<LoginResponse>, t: Throwable) {
+                progressDialog.dismiss()
+                onFailure(t.message!!)
+                Log.d(TAG, "onFailure: ${t.message}")
+                continuation.resumeWithException(t)
+            }
+        })
     }
 }
 
