@@ -21,15 +21,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -54,7 +52,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -112,7 +109,6 @@ fun HomeView() {
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.align(Alignment.CenterHorizontally)
         )
-
 
         Spacer(modifier = Modifier.weight(1f))
 
@@ -231,7 +227,7 @@ fun HomeView() {
                 })
         ) {
             Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                imageVector = Icons.Filled.ExitToApp,
                 contentDescription = "Placeholder",
                 tint = Color.White,
                 modifier = Modifier
@@ -310,28 +306,6 @@ fun IndicatorView(index: String, isSelected: Boolean) {
 }
 
 
-@Composable
-fun ImageCard(
-    imageResId: Int,
-    onClick: () -> Unit
-) {
-
-    Box(
-        modifier = Modifier
-            .height(54.dp)
-            .width(54.dp)
-            .clip(CircleShape)
-            .clickable(onClick = onClick)
-    ) {
-        Image(
-            painter = painterResource(id = imageResId),
-            contentDescription = "Image $imageResId",
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize(),
-        )
-
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
