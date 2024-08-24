@@ -1,10 +1,11 @@
+@file:Suppress("DEPRECATION")
+
 package com.aaraf.kwssip_android.views
 
 import android.app.ProgressDialog
 import android.content.ContentValues.TAG
 import android.content.Context
 import android.content.Context.MODE_PRIVATE
-import android.content.Intent
 import android.net.Uri
 import android.util.Log
 import android.widget.Toast
@@ -51,9 +52,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.aaraf.kwssip_android.HomeActivity
 import com.aaraf.kwssip_android.R
-import com.aaraf.kwssip_android.model.LoginResponse
+import com.aaraf.kwssip_android.model.FeedbackResponse
 import com.aaraf.kwssip_android.network.RetrofitInterface
 import com.aaraf.kwssip_android.network.ServiceBuilder
 import kotlinx.coroutines.launch
@@ -71,7 +71,7 @@ import kotlin.coroutines.resumeWithException
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RatingBottomSheet(onDismiss: () -> Unit, imageUris: List<Uri?>) {
+fun RatingBottomSheet(onDismiss: () -> Unit, imageUris: List<Uri?>, onSuccess: () -> Unit) {
 
     val name = rememberSaveable { mutableStateOf("") }
     val context = LocalContext.current
@@ -120,29 +120,6 @@ fun RatingBottomSheet(onDismiss: () -> Unit, imageUris: List<Uri?>) {
                 // Handle the selected rating here
                 println("Selected rating: $selectedRating")
             }
-
-//            Row(
-//                horizontalArrangement = Arrangement.spacedBy(8.dp),
-//                modifier = Modifier.align(Alignment.CenterHorizontally)
-//            ) {
-//
-//                repeat(5) { index ->
-//                    ImageCard(
-//                        imageResId = R.drawable.img1 + index,
-//                        onClick = {
-//                            rating.intValue = index + 1
-//                            when (rating.intValue) {
-//                                1 -> Toast.makeText(context, "Worst", Toast.LENGTH_SHORT).show()
-//                                2 -> Toast.makeText(context, "Bad", Toast.LENGTH_SHORT).show()
-//                                3 -> Toast.makeText(context, "Neutral", Toast.LENGTH_SHORT).show()
-//                                4 -> Toast.makeText(context, "Good", Toast.LENGTH_SHORT).show()
-//                                5 -> Toast.makeText(context, "Excellent", Toast.LENGTH_SHORT).show()
-//                            }
-//                        }
-//
-//                    )
-//                }
-//            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -214,11 +191,11 @@ fun RatingBottomSheet(onDismiss: () -> Unit, imageUris: List<Uri?>) {
                     coroutineScope.launch {
 
                         upload(name.value,
-                            comment.value,
-                            context,
-                            phone.value,
+                            customerFeedback = comment.value,
+                            context = context,
+                            customerContact = phone.value,
                             rating = 5,
-                            Integer.valueOf(driverID),
+                            driverId = Integer.valueOf(driverID),
                             imageUris = imageUris,
                             onFailure = {
                                 showAlertDialog.value = false
@@ -226,7 +203,7 @@ fun RatingBottomSheet(onDismiss: () -> Unit, imageUris: List<Uri?>) {
                             },
                             onSuccess = {
                                 showAlertDialog.value = true
-                                context.startActivity(Intent(context, HomeActivity::class.java))
+                                onSuccess()
                             })
 
 
@@ -375,15 +352,16 @@ suspend fun upload(
             img3 = img3,
             img4 = img4,
             img5 = img5
-        ).enqueue(object : Callback<LoginResponse> {
+        ).enqueue(object : Callback<FeedbackResponse> {
             override fun onResponse(
-                call: Call<LoginResponse>, response: Response<LoginResponse>
+                call: Call<FeedbackResponse>, response: Response<FeedbackResponse>
             ) {
                 progressDialog.dismiss()
                 if (response.isSuccessful && response.body()!!.Success) {
                     Log.d(TAG, "onResponse: ${response.body()?.message}")
                     Toast.makeText(context, response.body()?.message, Toast.LENGTH_SHORT).show()
                     onSuccess(response.body()?.message!!)
+
                     continuation.resume(true)
                 } else {
                     Toast.makeText(context, response.body()?.message, Toast.LENGTH_SHORT).show()
@@ -393,7 +371,7 @@ suspend fun upload(
                 }
             }
 
-            override fun onFailure(call: Call<LoginResponse>, t: Throwable) {
+            override fun onFailure(call: Call<FeedbackResponse>, t: Throwable) {
                 progressDialog.dismiss()
                 onFailure(t.message!!)
                 Log.d(TAG, "onFailure: ${t.message}")

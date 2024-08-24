@@ -1,6 +1,7 @@
 package com.aaraf.kwssip_android.network
 
 
+import com.aaraf.kwssip_android.model.FeedbackResponse
 import com.aaraf.kwssip_android.model.LoginResponse
 import okhttp3.MultipartBody
 import retrofit2.Call
@@ -36,6 +37,6 @@ interface RetrofitInterface {
         @Part img4: MultipartBody.Part?,
         @Part img5: MultipartBody.Part?,
 
-        ): Call<LoginResponse>
+        ): Call<FeedbackResponse>
 
 }

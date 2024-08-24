@@ -27,7 +27,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -175,7 +175,10 @@ fun HomeView() {
 
 
         if (isSheetPresented) {
-            RatingBottomSheet(onDismiss = { isSheetPresented = false }, imageUris)
+            RatingBottomSheet(onDismiss = { isSheetPresented = false }, imageUris, onSuccess = {
+                selectedImageCount = 0
+                imageUris = emptyList()
+            })
         }
 
         Spacer(modifier = Modifier.weight(1f))
@@ -204,11 +207,13 @@ fun HomeView() {
                         onClick = {
                             //clear Shared Preference
                             clearAppId(context)
+
                             showAlertDialog.value = false
                             context.startActivity(Intent(context, LoginActivity::class.java))
                             context.finish()
+
                         }, colors = ButtonDefaults.buttonColors(
-                            containerColor = colorResource(id = R.color.theme_blue)
+                            containerColor = colorResource(id = R.color.dark_blue)
                         )
                     ) {
                         Text("Logout")
@@ -227,7 +232,7 @@ fun HomeView() {
                 })
         ) {
             Icon(
-                imageVector = Icons.Filled.ExitToApp,
+                imageVector = Icons.AutoMirrored.Filled.ExitToApp,
                 contentDescription = "Placeholder",
                 tint = Color.White,
                 modifier = Modifier
@@ -254,7 +259,6 @@ fun clearAppId(context: Context) {
         Log.d(TAG, "clearAppId: No appId to clear")
     }
 }
-
 
 @SuppressLint("MissingColorAlphaChannel")
 @Composable
@@ -304,7 +308,6 @@ fun IndicatorView(index: String, isSelected: Boolean) {
         )
     }
 }
-
 
 
 @OptIn(ExperimentalMaterial3Api::class)
