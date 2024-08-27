@@ -45,6 +45,7 @@ class SplashActivity : ComponentActivity() {
                         } else {
                             HomeActivity::class.java
                         }
+
                         startActivity(Intent(this, nextActivity))
                         finish()
                     }, 4500)
@@ -69,6 +70,13 @@ class SplashActivity : ComponentActivity() {
         Log.d(TAG, if (appId.isNotEmpty()) "App ID retrieved: $appId" else "No App ID found")
         return appId
     }
+
+    private fun getDriverName(context: Context): String {
+        val sharedPreferences = context.getSharedPreferences("MySharedPref", MODE_PRIVATE)
+        val driverName = sharedPreferences.getString("appId", "").orEmpty()
+        return driverName
+    }
+
 
     private fun generateFCMToken(context: Context) {
         if (retryCount > 3) {

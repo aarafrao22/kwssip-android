@@ -28,7 +28,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
-import androidx.compose.material.icons.filled.Face
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -52,6 +51,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -63,7 +63,6 @@ import com.aaraf.kwssip_android.LoginActivity
 import com.aaraf.kwssip_android.R
 import com.github.dhaval2404.imagepicker.ImagePicker
 import kotlinx.coroutines.launch
-
 
 @Composable
 fun HomeView() {
@@ -103,7 +102,7 @@ fun HomeView() {
         )
 
         Text(
-            text = "Ahmed",
+            text = getDriverName(context),
             color = Color(0xFF43A5E4),
             fontSize = 32.sp,
             fontWeight = FontWeight.SemiBold,
@@ -122,21 +121,15 @@ fun HomeView() {
                     repeat(3) { colIndex ->
                         val index = rowIndex * 3 + colIndex
                         if (index < 5) {
-                            ImagePickerView(
-                                selectedImage = imageUris[index],
-                                onClick = {
+                            ImagePickerView(selectedImage = imageUris[index], onClick = {
 
-                                    coroutineScope.launch {
-                                        ImagePicker.with(context)
-                                            .cameraOnly()
-                                            .crop(512f, 512f)
-                                            .maxResultSize(512, 512)
-                                            .createIntent { intent ->
-                                                imagePickers[index].launch(intent)
-                                            }
-                                    }
+                                coroutineScope.launch {
+                                    ImagePicker.with(context).cameraOnly().crop(512f, 512f)
+                                        .maxResultSize(512, 512).createIntent { intent ->
+                                            imagePickers[index].launch(intent)
+                                        }
                                 }
-                            )
+                            })
                         }
                     }
                 }
@@ -151,8 +144,7 @@ fun HomeView() {
         ) {
             repeat(5) { index ->
                 IndicatorView(
-                    index = (index + 1).toString(),
-                    isSelected = index < selectedImageCount
+                    index = (index + 1).toString(), isSelected = index < selectedImageCount
                 )
             }
         }
@@ -175,15 +167,24 @@ fun HomeView() {
 
 
         if (isSheetPresented) {
-            RatingBottomSheet(onDismiss = { isSheetPresented = false }, imageUris, onSuccess = {
-                selectedImageCount = 0
-                imageUris = emptyList()
-            })
+            RatingBottomSheet(
+                onDismiss = {
+                    isSheetPresented = false
+                    selectedImageCount = 0
+                    imageUris = List(5) { null }
+                }, imageUris,
+                onSuccess = {
+                    selectedImageCount = 0
+                    imageUris = List(5) { null }
+                    isSheetPresented = false
+
+                })
         }
 
         Spacer(modifier = Modifier.weight(1f))
 
         if (showAlertDialog.value) {
+
             AlertDialog(onDismissRequest = {
                 showAlertDialog.value = false
                 onDismiss()
@@ -260,6 +261,13 @@ fun clearAppId(context: Context) {
     }
 }
 
+
+private fun getDriverName(context: Context): String {
+    val sharedPreferences = context.getSharedPreferences("MySharedPref", MODE_PRIVATE)
+    val driverName = sharedPreferences.getString("driver_name", "").orEmpty()
+    return driverName
+}
+
 @SuppressLint("MissingColorAlphaChannel")
 @Composable
 fun ImagePickerView(selectedImage: Uri?, onClick: () -> Unit) {
@@ -281,7 +289,7 @@ fun ImagePickerView(selectedImage: Uri?, onClick: () -> Unit) {
             )
         } else {
             Icon(
-                imageVector = Icons.Default.Face,
+                painter = painterResource(id = R.drawable.upload_cloud_2_line),
                 contentDescription = "Placeholder",
                 tint = Color.Gray,
                 modifier = Modifier
@@ -331,9 +339,7 @@ fun CustomTextFieldBottomSheet(
                 disabledIndicatorColor = Color.Transparent
             ),
             textStyle = TextStyle(
-                color = Color.DarkGray,
-                fontSize = 18.sp,
-                textAlign = TextAlign.Start
+                color = Color.DarkGray, fontSize = 18.sp, textAlign = TextAlign.Start
             ),
             shape = RoundedCornerShape(16.dp),
             keyboardOptions = keyboardOptions,
@@ -342,8 +348,7 @@ fun CustomTextFieldBottomSheet(
             modifier = modifier,
             placeholder = {
                 Box(
-                    modifier = Modifier
-                        .fillMaxSize()
+                    modifier = Modifier.fillMaxSize()
                 ) {
                     Text(
                         text = placeholder,

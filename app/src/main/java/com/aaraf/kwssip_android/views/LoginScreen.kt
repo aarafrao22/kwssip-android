@@ -51,6 +51,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat.startActivity
 import com.aaraf.kwssip_android.HomeActivity
 import com.aaraf.kwssip_android.R
 import com.aaraf.kwssip_android.Utils.FCM_TOKEN
@@ -69,6 +70,7 @@ import kotlin.coroutines.resumeWithException
 @Preview(showBackground = true)
 @Composable
 fun LoginScreen() {
+
     val username = rememberSaveable { mutableStateOf("") }
     val password = rememberSaveable { mutableStateOf("") }
     val userNameError = rememberSaveable { mutableStateOf<String?>(null) }
@@ -97,7 +99,9 @@ fun LoginScreen() {
                     .height(120.dp) // Adjust the height as needed
                     .width(120.dp)  // Adjust the width as needed
             )
+
             Spacer(modifier = Modifier.height(8.dp)) // Space between image and text
+
             Text(
                 text = "KWSSIP",
                 textAlign = TextAlign.Center,
@@ -141,7 +145,10 @@ fun LoginScreen() {
                 ),
                 onClick = {
                     if (validateInputs(
-                            username.value, password.value, userNameError, passwordError
+                            username.value,
+                            password.value,
+                            userNameError,
+                            passwordError
                         )
                     ) coroutineScope.launch {
 
@@ -149,7 +156,6 @@ fun LoginScreen() {
                         if (fcm_token.equals("")) fcm_token = FCM_TOKEN
 
                         callApi(username.value, password.value, context, fcm_token!!)
-
 
 //                        context.startActivity(Intent(context, HomeActivity::class.java))
 //                        (context as? Activity)?.finish() // Finish the LoginActivity
@@ -162,8 +168,6 @@ fun LoginScreen() {
             ) {
                 Text(text = "Login")
             }
-
-
 
             Spacer(modifier = Modifier.height(80.dp))
         }
@@ -236,26 +240,26 @@ fun loginField(
 fun validateInputs(
     username: String,
     password: String,
-    userNameError: MutableState<String?>,
+    emailError: MutableState<String?>,
     passwordError: MutableState<String?>
 ): Boolean {
-//    val emailPattern = "[a-zA-Z0-9._-]+@[a-z]+\\.+[a-z]+".toRegex()
-    userNameError.value = null
+    val emailPattern = "[a-zA-Z0-9._-]+@[a-z]+\\.+[a-z]+".toRegex()
+    emailError.value = null
     passwordError.value = null
 
     when {
         username.trim().isEmpty() || password.trim().isEmpty() -> {
-            if (username.trim().isEmpty()) userNameError.value = "Enter Email"
+            if (username.trim().isEmpty()) emailError.value = "Enter Email"
             if (password.trim().isEmpty()) passwordError.value = "Enter Password"
             Log.d("TAG", "Enter Credentials First")
             return false
         }
 
-//        !email.matches(emailPattern) -> {
-//            emailError.value = "Invalid Email Address"
-//            Log.d("TAG", "Invalid Email Address")
-//            return false
-//        }
+        !username.matches(emailPattern) -> {
+            emailError.value = "Invalid Name Address"
+            Log.d("TAG", "Invalid Email Address")
+            return false
+        }
 
         else -> {
             Log.d("TAG", "validated Inputs xD xD")
@@ -277,34 +281,50 @@ suspend fun callApi(email: String, password: String, context: Context, fcm_token
             ServiceBuilder.buildService(RetrofitInterface::class.java)
                 .login(email, password, "1", fcm_token).enqueue(object : Callback<LoginResponse> {
                     override fun onResponse(
-                        call: Call<LoginResponse>, response: Response<LoginResponse>
+                        call: Call<LoginResponse>,
+                        response: Response<LoginResponse>
                     ) {
+                        val responseBody = response.body()
+
+
                         progressDialog.dismiss()
 
-                        if (response.isSuccessful && response.body()!!.Success) {
+                        if (response.isSuccessful && responseBody!!.Success) {
+                            val message = responseBody.message
+                            val success = responseBody.Success
+                            val driverName = responseBody.driver_name
+                            val appId = responseBody.app_id
 
-                            Log.d(TAG, "onResponse: ${response.body()?.message}")
-                            context.startActivity(Intent(context, HomeActivity::class.java))
-                            saveLoginId(response.body()!!.app_id)
-                            (context as? Activity)?.finish() // Finish the LoginActivity
+
+                            Log.d(TAG, "onResponse: $message")
+
+                            saveLoginId(appId, driverName)
+
+                            val destination = Intent(context, HomeActivity::class.java)
+                            destination.putExtra("driver_name", driverName)
+                            startActivity(context, destination, null)
+
+                            (context as? Activity)?.finish()
                             continuation.resume(true)
 
                         } else {
                             continuation.resume(false)
-                            Toast.makeText(context, response.body()?.message, Toast.LENGTH_SHORT)
+                            Toast.makeText(context, responseBody!!.message, Toast.LENGTH_SHORT)
                                 .show()
                             Log.d(TAG, "onResponse: ${response.body()?.message}")
                         }
 
                     }
 
-                    private fun saveLoginId(appId: Int) {
+                    private fun saveLoginId(appId: Int, driver_name: String) {
                         val sharedPreferences =
                             context.getSharedPreferences("MySharedPref", MODE_PRIVATE)
                         val myEdit = sharedPreferences.edit()
 
                         myEdit.putString("appId", appId.toString())
+                        myEdit.putString("driver_name", driver_name)
                         Log.d(TAG, "saveUpdatedToken: appId $appId")
+                        Log.d(TAG, "saveUpdatedToken: driver_name $appId")
                         myEdit.apply()
 
                     }

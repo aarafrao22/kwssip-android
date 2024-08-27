@@ -107,6 +107,7 @@ fun RatingBottomSheet(onDismiss: () -> Unit, imageUris: List<Uri?>, onSuccess: (
             )
 
             Spacer(modifier = Modifier.height(16.dp))
+
             EmotionRatingBar(
                 emotions = listOf(
                     R.drawable.img1,
@@ -116,7 +117,7 @@ fun RatingBottomSheet(onDismiss: () -> Unit, imageUris: List<Uri?>, onSuccess: (
                     R.drawable.img5
                 )
             ) { selectedRating ->
-                rating.intValue = selectedRating
+                rating.intValue = selectedRating + 1
                 // Handle the selected rating here
                 println("Selected rating: $selectedRating")
             }
@@ -187,14 +188,15 @@ fun RatingBottomSheet(onDismiss: () -> Unit, imageUris: List<Uri?>, onSuccess: (
                 onClick = {
                     val driverID = getSavedAppId(context)
 
-                    showAlertDialog.value = uploadedImages()
+                    showAlertDialog.value = false
+
                     coroutineScope.launch {
 
                         upload(name.value,
                             customerFeedback = comment.value,
                             context = context,
                             customerContact = phone.value,
-                            rating = 5,
+                            rating = rating.intValue,
                             driverId = Integer.valueOf(driverID),
                             imageUris = imageUris,
                             onFailure = {
@@ -239,6 +241,13 @@ fun RatingBottomSheet(onDismiss: () -> Unit, imageUris: List<Uri?>, onSuccess: (
                                 )
 
                                 showAlertDialog.value = false
+
+                                ///HERE
+                                phone.value = ""
+                                name.value = ""
+                                rating.intValue = 0
+                                comment.value = ""
+
                                 onDismiss()
                             }, colors = ButtonDefaults.buttonColors(
                                 containerColor = colorResource(id = R.color.theme_blue)
@@ -291,12 +300,6 @@ private fun getSavedAppId(context: Context): String {
     return appId
 }
 
-fun uploadedImages(): Boolean {
-    Log.d(TAG, "uploadImages: ")
-
-    return true
-}
-
 suspend fun upload(
     customerName: String,
     customerFeedback: String,
@@ -318,7 +321,7 @@ suspend fun upload(
 
 
         val customerNameM = createFormData("CustomerName", customerName)
-        val customerContactM = createFormData("CustomerContact", customerContact)
+        val customerContactM = createFormData("CustomerContact", customerContact as String)
         val customerFeedbackM = createFormData("CustomerFeedback", customerFeedback)
         val ratingM = createFormData("Rating", rating.toString())
         val driverIdM = createFormData("Driver_id", driverId.toString())

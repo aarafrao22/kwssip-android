@@ -22,7 +22,6 @@ class HomeActivity : ComponentActivity() {
             KWSSIPAndroidTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) {
                     HomeView()
-//                    BottomSheetView(onDismiss = {})
                 }
             }
         }
