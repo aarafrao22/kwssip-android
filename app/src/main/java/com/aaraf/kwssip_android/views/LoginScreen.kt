@@ -185,7 +185,6 @@ private fun getSavedToken(context: Context): String? {
     } else {
         Log.d(TAG, "getSavedToken: No token found")
     }
-
     return token
 }
 
@@ -238,7 +237,7 @@ fun loginField(
 }
 
 fun validateInputs(
-    username: String,
+    email: String,
     password: String,
     emailError: MutableState<String?>,
     passwordError: MutableState<String?>
@@ -248,14 +247,14 @@ fun validateInputs(
     passwordError.value = null
 
     when {
-        username.trim().isEmpty() || password.trim().isEmpty() -> {
-            if (username.trim().isEmpty()) emailError.value = "Enter Email"
+        email.trim().isEmpty() || password.trim().isEmpty() -> {
+            if (email.trim().isEmpty()) emailError.value = "Enter Email"
             if (password.trim().isEmpty()) passwordError.value = "Enter Password"
             Log.d("TAG", "Enter Credentials First")
             return false
         }
 
-        !username.matches(emailPattern) -> {
+        !email.matches(emailPattern) -> {
             emailError.value = "Invalid Name Address"
             Log.d("TAG", "Invalid Email Address")
             return false
@@ -286,7 +285,6 @@ suspend fun callApi(email: String, password: String, context: Context, fcm_token
                     ) {
                         val responseBody = response.body()
 
-
                         progressDialog.dismiss()
 
                         if (response.isSuccessful && responseBody!!.Success) {
@@ -294,7 +292,6 @@ suspend fun callApi(email: String, password: String, context: Context, fcm_token
                             val success = responseBody.Success
                             val driverName = responseBody.driver_name
                             val appId = responseBody.app_id
-
 
                             Log.d(TAG, "onResponse: $message")
 
@@ -326,7 +323,6 @@ suspend fun callApi(email: String, password: String, context: Context, fcm_token
                         Log.d(TAG, "saveUpdatedToken: appId $appId")
                         Log.d(TAG, "saveUpdatedToken: driver_name $appId")
                         myEdit.apply()
-
                     }
 
                     override fun onFailure(call: Call<LoginResponse>, t: Throwable) {
