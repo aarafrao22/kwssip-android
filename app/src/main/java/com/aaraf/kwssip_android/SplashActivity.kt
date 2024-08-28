@@ -55,6 +55,23 @@ class SplashActivity : ComponentActivity() {
     }
 
     private fun saveUpdatedToken(context: Context, token: String) {
+//        ServiceBuilder.buildService(RetrofitInterface::class.java)
+//            .updateFCM(getSavedAppId(context), token).enqueue(object : Callback<UpdateFCMResponse> {
+//                override fun onResponse(
+//                    call: Call<UpdateFCMResponse>,
+//                    response: Response<UpdateFCMResponse>
+//                ) {
+//                    if (response.body()!!.Success) {
+//                        Log.d(TAG, "onResponse: SUCCESS")
+//                    }
+//
+//                }
+//
+//                override fun onFailure(call: Call<UpdateFCMResponse>, t: Throwable) {
+//                    Log.d(TAG, "onFailure: ${t.message}")
+//                }
+//            })
+
         val sharedPreferences = context.getSharedPreferences("MySharedPref", MODE_PRIVATE)
         sharedPreferences.edit().apply {
             putString("RefreshedToken", token)
@@ -69,12 +86,6 @@ class SplashActivity : ComponentActivity() {
 
         Log.d(TAG, if (appId.isNotEmpty()) "App ID retrieved: $appId" else "No App ID found")
         return appId
-    }
-
-    private fun getDriverName(context: Context): String {
-        val sharedPreferences = context.getSharedPreferences("MySharedPref", MODE_PRIVATE)
-        val driverName = sharedPreferences.getString("appId", "").orEmpty()
-        return driverName
     }
 
 

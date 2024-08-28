@@ -3,6 +3,7 @@ package com.aaraf.kwssip_android.network
 
 import com.aaraf.kwssip_android.model.FeedbackResponse
 import com.aaraf.kwssip_android.model.LoginResponse
+import com.aaraf.kwssip_android.model.UpdateFCMResponse
 import okhttp3.MultipartBody
 import retrofit2.Call
 import retrofit2.http.Field
@@ -21,6 +22,14 @@ interface RetrofitInterface {
         @Field("device_type") device_type: String?,
         @Field("fcm") fcm: String?
     ): Call<LoginResponse>
+
+
+    @FormUrlEncoded
+    @POST("update_fcm.php")
+    fun updateFCM(
+        @Field("driver_id") driver_id: String?,
+        @Field("fcm") fcm: String?
+    ): Call<UpdateFCMResponse>
 
 
     @Multipart
