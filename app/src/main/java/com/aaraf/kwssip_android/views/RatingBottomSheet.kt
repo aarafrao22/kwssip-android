@@ -292,7 +292,7 @@ fun EmotionRatingBar(
     }
 }
 
-private fun getSavedAppId(context: Context): String {
+fun getSavedAppId(context: Context): String {
     val sharedPreferences = context.getSharedPreferences("MySharedPref", MODE_PRIVATE)
     val appId = sharedPreferences.getString("appId", "").orEmpty()
 

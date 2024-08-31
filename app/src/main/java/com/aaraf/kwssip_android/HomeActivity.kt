@@ -12,7 +12,6 @@ import com.aaraf.kwssip_android.ui.theme.KWSSIPAndroidTheme
 import com.aaraf.kwssip_android.views.HomeView
 
 
-
 class HomeActivity : ComponentActivity() {
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     override fun onCreate(savedInstanceState: Bundle?) {

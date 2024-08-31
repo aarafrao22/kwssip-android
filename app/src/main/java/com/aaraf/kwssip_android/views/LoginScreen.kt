@@ -56,6 +56,7 @@ import com.aaraf.kwssip_android.HomeActivity
 import com.aaraf.kwssip_android.R
 import com.aaraf.kwssip_android.Utils.FCM_TOKEN
 import com.aaraf.kwssip_android.model.LoginResponse
+import com.aaraf.kwssip_android.model.UpdateFCMResponse
 import com.aaraf.kwssip_android.network.RetrofitInterface
 import com.aaraf.kwssip_android.network.ServiceBuilder
 import kotlinx.coroutines.launch
@@ -154,6 +155,27 @@ fun LoginScreen() {
 
                         var fcm_token = getSavedToken(context)
                         if (fcm_token.equals("")) fcm_token = FCM_TOKEN
+
+                        ServiceBuilder.buildService(RetrofitInterface::class.java)
+                            .updateFCM(getSavedAppId(context), fcm_token)
+                            .enqueue(object : Callback<UpdateFCMResponse> {
+                                override fun onResponse(
+                                    call: Call<UpdateFCMResponse>,
+                                    response: Response<UpdateFCMResponse>
+                                ) {
+                                    if (response.body()!!.Success) {
+                                        Log.d(TAG, "onResponse: SUCCESS")
+                                    }
+                                }
+
+                                override fun onFailure(
+                                    call: Call<UpdateFCMResponse>,
+                                    t: Throwable
+                                ) {
+                                    Log.d(TAG, "onFailure: ${t.message}")
+                                }
+                            })
+
 
                         callApi(username.value, password.value, context, fcm_token!!)
 

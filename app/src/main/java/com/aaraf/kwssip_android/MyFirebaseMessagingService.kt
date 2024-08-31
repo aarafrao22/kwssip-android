@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.content.ContentValues.TAG
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
@@ -22,8 +23,8 @@ import java.util.Random
 class MyFirebaseMessagingService : FirebaseMessagingService() {
     override fun onNewToken(token: String) {
         super.onNewToken(token)
-        saveUpdatedToken(token, this)
 
+        saveUpdatedToken(token, this)
         Log.d(TAG, "onNewToken: $token")
     }
 
@@ -38,30 +39,37 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
 
-        Log.d(TAG, "onMessageReceived: ${message.notification?.title}")
+        val title = message.data["title"].toString()
+        val body = message.data["body"].toString()
+        val coordinates = message.data["coordinates"]
 
-        sendNotification(
-            message.notification?.title.toString(), message.notification?.body.toString()
-        )
-
+        customNotification(title, body, coordinates)
     }
 
-    private fun sendNotification(title: String, messageBody: String) {
-        customNotification(title, messageBody)
-    }
-
-    private fun customNotification(title: String, messageBody: String) {
+    private fun customNotification(title: String, messageBody: String, coordinates: String?) {
         val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         val mBuilder = NotificationCompat.Builder(applicationContext, "notify_001")
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC).setSmallIcon(R.drawable.white)
-            .setAutoCancel(true).setContentTitle(title).setContentText(messageBody)
-            .setPriority(NotificationCompat.PRIORITY_MAX).setOnlyAlertOnce(true)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setSmallIcon(R.drawable.white)
+            .setAutoCancel(true)
+            .setContentTitle(title)
+            .setContentText(messageBody)
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setOnlyAlertOnce(true)
 
-        val notificationIntent = Intent(applicationContext, SplashActivity::class.java)
+        // Parse the coordinates and create an Intent to open Google Maps
+        val intent = coordinates?.let {
+            val (latitude, longitude) = it.split(",").map { coord -> coord.trim() }
+            val uri = "geo:$latitude,$longitude?q=$latitude,$longitude"
+            Intent(Intent.ACTION_VIEW, Uri.parse(uri)).apply {
+                setPackage("com.google.android.apps.maps")
+            }
+        } ?: Intent(applicationContext, SplashActivity::class.java)
+
         val contentIntent = PendingIntent.getActivity(
             applicationContext,
             0,
-            notificationIntent,
+            intent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
@@ -86,7 +94,6 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
     private fun saveUpdatedToken(
         token: String, context: Context
     ) {
-
         ServiceBuilder.buildService(RetrofitInterface::class.java)
             .updateFCM(getSavedAppId(context), token).enqueue(object : Callback<UpdateFCMResponse> {
                 override fun onResponse(
@@ -95,7 +102,6 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                     if (response.body()!!.Success) {
                         Log.d(TAG, "onResponse: SUCCESS")
                     }
-
                 }
 
                 override fun onFailure(call: Call<UpdateFCMResponse>, t: Throwable) {

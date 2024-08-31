@@ -9,6 +9,7 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.net.Uri
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -61,13 +62,21 @@ import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import com.aaraf.kwssip_android.LoginActivity
 import com.aaraf.kwssip_android.R
+import com.aaraf.kwssip_android.model.UpdateFCMResponse
+import com.aaraf.kwssip_android.network.RetrofitInterface
+import com.aaraf.kwssip_android.network.ServiceBuilder
 import com.github.dhaval2404.imagepicker.ImagePicker
 import kotlinx.coroutines.launch
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 @Composable
 fun HomeView() {
     var isSheetPresented by remember { mutableStateOf(false) }
     val showAlertDialog = remember { mutableStateOf(false) }
+    val isWorkInQueue = remember { mutableStateOf(false) }
+    val showImagesLayout = remember { mutableStateOf(false) }
     var selectedImageCount by remember { mutableIntStateOf(0) }
     var imageUris by remember { mutableStateOf(List(5) { null as Uri? }) }
     val coroutineScope = rememberCoroutineScope()
@@ -153,8 +162,7 @@ fun HomeView() {
 
         Button(
             colors = ButtonDefaults.buttonColors(
-                contentColor = Color.White,
-                containerColor = colorResource(id = R.color.dark_blue)
+                contentColor = Color.White, containerColor = colorResource(id = R.color.dark_blue)
             ),
             onClick = { isSheetPresented = true },
             modifier = Modifier
@@ -167,18 +175,16 @@ fun HomeView() {
 
 
         if (isSheetPresented) {
-            RatingBottomSheet(
-                onDismiss = {
-                    isSheetPresented = false
-                    selectedImageCount = 0
-                    imageUris = List(5) { null }
-                }, imageUris,
-                onSuccess = {
-                    selectedImageCount = 0
-                    imageUris = List(5) { null }
-                    isSheetPresented = false
+            RatingBottomSheet(onDismiss = {
+                isSheetPresented = false
+                selectedImageCount = 0
+                imageUris = List(5) { null }
+            }, imageUris, onSuccess = {
+                selectedImageCount = 0
+                imageUris = List(5) { null }
+                isSheetPresented = false
 
-                })
+            })
         }
 
         Spacer(modifier = Modifier.weight(1f))
@@ -207,11 +213,41 @@ fun HomeView() {
                     Button(
                         onClick = {
                             //clear Shared Preference
-                            clearAppId(context)
+
+
+                            ServiceBuilder.buildService(RetrofitInterface::class.java).logout(
+                                getSavedAppId(context)
+                            ).enqueue(object : Callback<UpdateFCMResponse> {
+                                override fun onResponse(
+                                    call: Call<UpdateFCMResponse>,
+                                    response: Response<UpdateFCMResponse>
+                                ) {
+                                    if (response.body()!!.Success) {
+
+                                        clearAppId(context)
+                                        context.startActivity(
+                                            Intent(
+                                                context, LoginActivity::class.java
+                                            )
+                                        )
+                                        context.finish()
+                                    } else Toast.makeText(
+                                        context, response.body()!!.message, Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+
+                                override fun onFailure(
+                                    call: Call<UpdateFCMResponse>, t: Throwable
+                                ) {
+                                    Toast.makeText(context, "Logout failed!", Toast.LENGTH_SHORT)
+                                        .show()
+                                }
+
+                            })
+
 
                             showAlertDialog.value = false
-                            context.startActivity(Intent(context, LoginActivity::class.java))
-                            context.finish()
+
 
                         }, colors = ButtonDefaults.buttonColors(
                             containerColor = colorResource(id = R.color.dark_blue)

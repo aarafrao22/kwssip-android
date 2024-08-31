@@ -55,6 +55,7 @@ class SplashActivity : ComponentActivity() {
     }
 
     private fun saveUpdatedToken(context: Context, token: String) {
+
 //        ServiceBuilder.buildService(RetrofitInterface::class.java)
 //            .updateFCM(getSavedAppId(context), token).enqueue(object : Callback<UpdateFCMResponse> {
 //                override fun onResponse(

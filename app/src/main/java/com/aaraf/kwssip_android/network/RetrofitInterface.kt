@@ -25,6 +25,13 @@ interface RetrofitInterface {
 
 
     @FormUrlEncoded
+    @POST("logout.php")
+    fun logout(
+        @Field("driver_id") driver_id: String?,
+    ): Call<UpdateFCMResponse>
+
+
+    @FormUrlEncoded
     @POST("update_fcm.php")
     fun updateFCM(
         @Field("driver_id") driver_id: String?,
