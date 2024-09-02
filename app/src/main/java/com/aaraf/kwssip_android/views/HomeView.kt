@@ -82,6 +82,7 @@ fun HomeView() {
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current as Activity
 
+
     val imagePickers = List(5) { index ->
         rememberLauncherForActivityResult(
             contract = ActivityResultContracts.StartActivityForResult()
@@ -298,7 +299,7 @@ fun clearAppId(context: Context) {
 }
 
 
-private fun getDriverName(context: Context): String {
+fun getDriverName(context: Context): String {
     val sharedPreferences = context.getSharedPreferences("MySharedPref", MODE_PRIVATE)
     val driverName = sharedPreferences.getString("driver_name", "").orEmpty()
     return driverName

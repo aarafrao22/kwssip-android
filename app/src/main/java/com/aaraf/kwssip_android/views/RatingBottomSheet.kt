@@ -313,12 +313,10 @@ suspend fun upload(
 ): Boolean {
     return suspendCancellableCoroutine { continuation ->
 
-
         val progressDialog = ProgressDialog(context)
         progressDialog.setMessage("Loading...")
         progressDialog.setCancelable(false) // Optional: Prevent the user from canceling the dialog
         progressDialog.show()
-
 
         val customerNameM = createFormData("CustomerName", customerName)
         val customerContactM = createFormData("CustomerContact", customerContact as String)

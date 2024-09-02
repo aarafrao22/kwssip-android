@@ -1,6 +1,7 @@
 package com.aaraf.kwssip_android.network
 
 
+import com.aaraf.kwssip_android.model.ComplaintsListModel
 import com.aaraf.kwssip_android.model.FeedbackResponse
 import com.aaraf.kwssip_android.model.LoginResponse
 import com.aaraf.kwssip_android.model.UpdateFCMResponse
@@ -29,6 +30,13 @@ interface RetrofitInterface {
     fun logout(
         @Field("driver_id") driver_id: String?,
     ): Call<UpdateFCMResponse>
+
+
+    @FormUrlEncoded
+    @POST("get_complaints.php")
+    fun getComplaints(
+        @Field("driver_id") driver_id: String?,
+    ): Call<ComplaintsListModel>
 
 
     @FormUrlEncoded
