@@ -4,12 +4,14 @@ import android.content.ContentValues.TAG
 import android.content.Intent
 import android.net.Uri
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -21,6 +23,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -39,6 +42,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aaraf.kwssip_android.R
+import com.aaraf.kwssip_android.Utils.TASK_ID
 import com.aaraf.kwssip_android.model.Complaint
 import com.aaraf.kwssip_android.model.ComplaintsListModel
 import com.aaraf.kwssip_android.network.RetrofitInterface
@@ -53,19 +57,18 @@ import retrofit2.Response
 fun PendingTaskView() {
     val itemList = remember { mutableStateListOf<Complaint>() }
     val showList = remember { mutableStateOf(true) }
+    val taskId = remember { mutableStateOf("") }
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
         coroutineScope.launch {
             try {
-
                 ServiceBuilder.buildService(RetrofitInterface::class.java)
                     .getComplaints(/*getSavedAppId(context)*/"54"
                     ).enqueue(object : Callback<ComplaintsListModel> {
                         override fun onResponse(
-                            call: Call<ComplaintsListModel>,
-                            response: Response<ComplaintsListModel>
+                            call: Call<ComplaintsListModel>, response: Response<ComplaintsListModel>
                         ) {
                             val tasks = response.body()!!.complaints
                             itemList.addAll(tasks)
@@ -75,61 +78,75 @@ fun PendingTaskView() {
                             Log.d(TAG, "onFailure: ${t.message}")
                         }
                     })
-
             } catch (e: Exception) {
                 Log.e("PendingTaskView", "Error fetching tasks", e)
             }
         }
     }
+    if (taskId.value != "") {
+        Log.d(TAG, "PendingTaskView: ${taskId.value}")
+    }
 
     if (showList.value) {
-        TaskListView(itemList = itemList, onTaskClick = { showList.value = false })
+        TaskListView(itemList = itemList, onClick = {
+            taskId.value = it
+            showList.value = false
+            TASK_ID = it
+        })
     } else {
-        HomeView()
+        HomeView(onSuccess = {
+            showList.value = true
+        })
     }
 }
 
 @Composable
-fun TaskListView(itemList: List<Complaint>, onTaskClick: () -> Unit) {
-    Box(modifier = Modifier.background(Color.White)) {
-        Column(
+fun TaskListView(itemList: List<Complaint>, onClick: (String) -> Unit) {
+    Scaffold { innerPadding ->
+        Box(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
-                .background(Color.White),
+                .background(Color.White)
+                .padding(innerPadding)
         ) {
-            Spacer(modifier = Modifier.height(48.dp))
-            Text(
-                text = "Welcome,",
-                color = Color(0xFF21637D),
-                fontSize = 20.sp,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.align(Alignment.CenterHorizontally)
-            )
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+                    .background(Color.White),
+            ) {
+                Spacer(modifier = Modifier.height(68.dp))
+                Text(
+                    text = "Welcome,",
+                    color = Color(0xFF21637D),
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
 
-            Text(
-                text = getDriverName(LocalContext.current),
-                color = Color(0xFF43A5E4),
-                fontSize = 32.sp,
-                textAlign = TextAlign.Center,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.align(Alignment.CenterHorizontally)
-            )
-            Spacer(modifier = Modifier.height(48.dp))
-            Text(
-                text = "Pending Tasks",
-                color = Color(0xFF919191),
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.height(18.dp))
-            ItemList(items = itemList, onClick = onTaskClick)
+                Text(
+                    text = getDriverName(LocalContext.current),
+                    color = Color(0xFF43A5E4),
+                    fontSize = 32.sp,
+                    textAlign = TextAlign.Center,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
+                Spacer(modifier = Modifier.height(48.dp))
+                Text(
+                    text = "Pending Tasks",
+                    color = Color(0xFF919191),
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(18.dp))
+                ItemList(items = itemList, onClick = onClick)
+            }
         }
     }
 }
 
 @Composable
-fun ItemList(items: List<Complaint>, onClick: () -> Unit) {
+fun ItemList(items: List<Complaint>, onClick: (String) -> Unit) {
     if (items.isNotEmpty()) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -137,7 +154,8 @@ fun ItemList(items: List<Complaint>, onClick: () -> Unit) {
             contentPadding = PaddingValues(bottom = 16.dp)
         ) {
             items(items.size) { index ->
-                PendingItem(item = items[index], onClick)
+                PendingItem(item = items[index]) { onClick(items[index].complaintID) } // Pass the item ID correctly
+
             }
         }
     } else {
@@ -155,12 +173,21 @@ fun ItemList(items: List<Complaint>, onClick: () -> Unit) {
 @Composable
 fun PendingItem(item: Complaint, onClick: () -> Unit) {
     val context = LocalContext.current
+    val backgroundColor = if (item.action == "Completed") Color.LightGray else Color.White
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .border(width = 0.2.dp, color = Color.Gray, shape = RoundedCornerShape(12.dp))
-            .background(color = Color.White, shape = RoundedCornerShape(12.dp))
+            .background(color = backgroundColor, shape = RoundedCornerShape(12.dp))
             .padding(16.dp)
+            .clickable {
+                if (item.action == "Completed") {
+                    Toast
+                        .makeText(context, "Completed Task", Toast.LENGTH_SHORT)
+                        .show()
+                }
+            }
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -168,7 +195,8 @@ fun PendingItem(item: Complaint, onClick: () -> Unit) {
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
-                modifier = Modifier.weight(1f), horizontalAlignment = Alignment.Start
+                modifier = Modifier.weight(1f),
+                horizontalAlignment = Alignment.Start
             ) {
                 Text(
                     text = item.Veh_no,
@@ -182,35 +210,45 @@ fun PendingItem(item: Complaint, onClick: () -> Unit) {
                     fontSize = 14.sp,
                     lineHeight = 18.sp,
                     fontWeight = FontWeight.Normal,
-                    modifier = Modifier.fillMaxWidth(0.88f)
+                    modifier = Modifier.fillMaxWidth(0.9f)
                 )
             }
 
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(painter = painterResource(id = R.drawable.checkbox_circle_line),
-                    contentDescription = "Checkbox",
-                    tint = Color(0XFF7AA76F),
-                    modifier = Modifier
-                        .padding(6.dp)
-                        .size(34.dp)
-                        .clickable {
-                            Log.d("PendingItem", "showFeedbackScreen")
-                            onClick()
-                        })
+                if (item.action != "Completed") {
+                    ActionIcon(
+                        id = R.drawable.checkbox_circle_line,
+                        contentDescription = "Checkbox",
+                        tint = Color(0XFF7AA76F),
+                        onClick = onClick
+                    )
+                }
 
-                Icon(painter = painterResource(id = R.drawable.direction_fill),
+                ActionIcon(
+                    id = R.drawable.direction_fill,
                     contentDescription = "Directions",
-                    tint = Color.Gray,
-                    modifier = Modifier
-                        .padding(6.dp)
-                        .size(34.dp)
-                        .clickable {
-                            openMapActivity(context, "df")
-                        })
+                    tint = Color.Gray
+                ) {
+                    openMapActivity(context, item.coordinates)
+                }
             }
         }
     }
 }
+
+@Composable
+fun ActionIcon(id: Int, contentDescription: String, tint: Color, onClick: () -> Unit = {}) {
+    Icon(
+        painter = painterResource(id = id),
+        contentDescription = contentDescription,
+        tint = tint,
+        modifier = Modifier
+            .padding(6.dp)
+            .size(34.dp)
+            .clickable { onClick() }
+    )
+}
+
 
 fun openMapActivity(context: android.content.Context, coordinates: String) {
     val intent = coordinates.takeIf { it.contains(",") }?.let {

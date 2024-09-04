@@ -72,7 +72,7 @@ import retrofit2.Callback
 import retrofit2.Response
 
 @Composable
-fun HomeView() {
+fun HomeView(taskId: String = "", onSuccess: () -> Unit) {
     var isSheetPresented by remember { mutableStateOf(false) }
     val showAlertDialog = remember { mutableStateOf(false) }
     val isWorkInQueue = remember { mutableStateOf(false) }
@@ -115,6 +115,7 @@ fun HomeView() {
             text = getDriverName(context),
             color = Color(0xFF43A5E4),
             fontSize = 32.sp,
+
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.align(Alignment.CenterHorizontally)
         )
@@ -176,16 +177,20 @@ fun HomeView() {
 
 
         if (isSheetPresented) {
-            RatingBottomSheet(onDismiss = {
-                isSheetPresented = false
-                selectedImageCount = 0
-                imageUris = List(5) { null }
-            }, imageUris, onSuccess = {
-                selectedImageCount = 0
-                imageUris = List(5) { null }
-                isSheetPresented = false
+            RatingBottomSheet(
+                onDismiss = {
+                    isSheetPresented = false
+                    selectedImageCount = 0
+                    imageUris = List(5) { null }
+                },
+                imageUris = imageUris,
+                onSuccess = {
+                    onSuccess()
+                    selectedImageCount = 0
+                    imageUris = List(5) { null }
+                    isSheetPresented = false
 
-            })
+                })
         }
 
         Spacer(modifier = Modifier.weight(1f))
@@ -411,5 +416,5 @@ fun CustomTextFieldBottomSheet(
 @Composable
 @Preview(showBackground = true)
 fun HomeViewPreview() {
-    HomeView()
+    HomeView(onSuccess = {})
 }
