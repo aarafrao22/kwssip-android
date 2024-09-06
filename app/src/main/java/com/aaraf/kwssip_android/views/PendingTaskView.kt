@@ -11,7 +11,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -21,9 +20,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -55,7 +54,9 @@ import retrofit2.Response
 @Composable
 @Preview(showBackground = true)
 fun PendingTaskView() {
-    val itemList = remember { mutableStateListOf<Complaint>() }
+//    val itemList = remember { mutableStateListOf<Complaint>() }
+    val itemListCompleted = remember { mutableStateListOf<Complaint>() }
+    val itemListPending = remember { mutableStateListOf<Complaint>() }
     val showList = remember { mutableStateOf(true) }
     val taskId = remember { mutableStateOf("") }
     val context = LocalContext.current
@@ -71,7 +72,15 @@ fun PendingTaskView() {
                             call: Call<ComplaintsListModel>, response: Response<ComplaintsListModel>
                         ) {
                             val tasks = response.body()!!.complaints
-                            itemList.addAll(tasks)
+
+                            for (i in tasks) {
+                                if (i.action == "Completed") {
+                                    itemListCompleted.add(i)
+                                } else {
+                                    itemListPending.add(i)
+                                }
+                            }
+//                            itemList.addAll(tasks)
                         }
 
                         override fun onFailure(call: Call<ComplaintsListModel>, t: Throwable) {
@@ -88,11 +97,14 @@ fun PendingTaskView() {
     }
 
     if (showList.value) {
-        TaskListView(itemList = itemList, onClick = {
-            taskId.value = it
-            showList.value = false
-            TASK_ID = it
-        })
+        TaskListView(
+            itemListPending = itemListPending,
+            itemListCompleted = itemListCompleted,
+            onClick = {
+                taskId.value = it
+                showList.value = false
+                TASK_ID = it
+            })
     } else {
         HomeView(onSuccess = {
             showList.value = true
@@ -101,71 +113,91 @@ fun PendingTaskView() {
 }
 
 @Composable
-fun TaskListView(itemList: List<Complaint>, onClick: (String) -> Unit) {
-    Scaffold { innerPadding ->
-        Box(
-            modifier = Modifier
-                .background(Color.White)
-                .padding(innerPadding)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp)
-                    .background(Color.White),
-            ) {
-                Spacer(modifier = Modifier.height(68.dp))
-                Text(
-                    text = "Welcome,",
-                    color = Color(0xFF21637D),
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                )
+fun TaskListView(
+    itemListPending: List<Complaint>,
+    itemListCompleted: List<Complaint>,
+    onClick: (String) -> Unit
+) {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White)
+            .padding(16.dp)
+    ) {
+        item {
+            Spacer(modifier = Modifier.height(68.dp))
+            Text(
+                text = "Welcome,",
+                color = Color(0xFF21637D),
+                fontSize = 20.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center
+            )
 
-                Text(
-                    text = getDriverName(LocalContext.current),
-                    color = Color(0xFF43A5E4),
-                    fontSize = 32.sp,
-                    textAlign = TextAlign.Center,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                )
-                Spacer(modifier = Modifier.height(48.dp))
-                Text(
-                    text = "Pending Tasks",
-                    color = Color(0xFF919191),
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(18.dp))
-                ItemList(items = itemList, onClick = onClick)
-            }
+            Text(
+                text = getDriverName(LocalContext.current),
+                color = Color(0xFF43A5E4),
+                fontSize = 32.sp,
+                textAlign = TextAlign.Center,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(48.dp))
+            Text(
+                text = "Pending Tasks",
+                color = Color(0xFF919191),
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(18.dp))
+        }
+
+        items(itemListPending) { item ->
+            PendingItem(item = item) { onClick(item.complaintID) }
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
+        item {
+            Spacer(modifier = Modifier.height(18.dp))
+            Text(
+                text = "Completed Tasks",
+                color = Color(0xFF919191),
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(18.dp))
+        }
+
+        items(itemListCompleted) { item ->
+            PendingItem(item = item) { onClick(item.complaintID) }
+            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 }
 
 @Composable
 fun ItemList(items: List<Complaint>, onClick: (String) -> Unit) {
-    if (items.isNotEmpty()) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(bottom = 16.dp)
-        ) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(bottom = 16.dp)
+    ) {
+        if (items.isNotEmpty()) {
             items(items.size) { index ->
-                PendingItem(item = items[index]) { onClick(items[index].complaintID) } // Pass the item ID correctly
-
+                PendingItem(item = items[index]) { onClick(items[index].complaintID) }
             }
-        }
-    } else {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text(
-                text = "No Task Yet",
-                color = Color(0xFF777777),
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Normal
-            )
+        } else {
+            item {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(
+                        text = "No Task Yet",
+                        color = Color(0xFF777777),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Normal
+                    )
+                }
+            }
         }
     }
 }
@@ -173,7 +205,7 @@ fun ItemList(items: List<Complaint>, onClick: (String) -> Unit) {
 @Composable
 fun PendingItem(item: Complaint, onClick: () -> Unit) {
     val context = LocalContext.current
-    val backgroundColor = if (item.action == "Completed") Color.LightGray else Color.White
+    val backgroundColor = Color.White
 
     Box(
         modifier = Modifier
@@ -222,15 +254,17 @@ fun PendingItem(item: Complaint, onClick: () -> Unit) {
                         tint = Color(0XFF7AA76F),
                         onClick = onClick
                     )
+
+                    ActionIcon(
+                        id = R.drawable.direction_fill,
+                        contentDescription = "Directions",
+                        tint = Color.Gray
+                    ) {
+                        openMapActivity(context, item.coordinates)
+                    }
                 }
 
-                ActionIcon(
-                    id = R.drawable.direction_fill,
-                    contentDescription = "Directions",
-                    tint = Color.Gray
-                ) {
-                    openMapActivity(context, item.coordinates)
-                }
+
             }
         }
     }
