@@ -19,9 +19,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -35,6 +37,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -96,194 +99,228 @@ fun HomeView(taskId: String = "", onSuccess: () -> Unit) {
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFFFFFFFF)),
-    ) {
-        Spacer(modifier = Modifier.weight(1f))
 
-        Text(
-            text = "Welcome,",
-            color = Color(0xFF21637D),
-            fontSize = 20.sp,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.align(Alignment.CenterHorizontally)
-        )
-
-        Text(
-            text = getDriverName(context),
-            color = Color(0xFF43A5E4),
-            fontSize = 32.sp,
-
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.align(Alignment.CenterHorizontally)
-        )
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        Column(
-            modifier = Modifier.align(Alignment.CenterHorizontally),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            repeat(2) { rowIndex ->
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    repeat(3) { colIndex ->
-                        val index = rowIndex * 3 + colIndex
-                        if (index < 5) {
-                            ImagePickerView(selectedImage = imageUris[index], onClick = {
-
-                                coroutineScope.launch {
-                                    ImagePicker.with(context).cameraOnly().crop(512f, 512f)
-                                        .maxResultSize(512, 512).createIntent { intent ->
-                                            imagePickers[index].launch(intent)
-                                        }
-                                }
+    Scaffold { paddingValues: PaddingValues ->
+        Box(modifier = Modifier.padding(paddingValues)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFFFFFFFF)),
+            ) {
+                Spacer(modifier = Modifier.weight(0.2f))
+                Box(modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth()) {
+                    Box(
+                        modifier = Modifier
+                            .size(42.dp)
+                            .align(Alignment.TopEnd)
+                            .clip(CircleShape)
+                            .background(colorResource(id = R.color.dark_blue))
+                            .clickable(onClick = {
+                                showAlertDialog.value = true
                             })
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ExitToApp,
+                            contentDescription = "Placeholder",
+                            tint = Color.White,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(8.dp)
+                        )
+                    }
+                }
+                Text(
+                    text = "Welcome,",
+                    color = Color(0xFF21637D),
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
+
+                Text(
+                    text = getDriverName(context),
+                    color = Color(0xFF43A5E4),
+                    fontSize = 32.sp,
+
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                Column(
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    repeat(2) { rowIndex ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            repeat(3) { colIndex ->
+                                val index = rowIndex * 3 + colIndex
+                                if (index < 5) {
+                                    ImagePickerView(selectedImage = imageUris[index], onClick = {
+
+                                        coroutineScope.launch {
+                                            ImagePicker.with(context).cameraOnly().crop(512f, 512f)
+                                                .maxResultSize(512, 512).createIntent { intent ->
+                                                    imagePickers[index].launch(intent)
+                                                }
+                                        }
+                                    })
+                                }
+                            }
                         }
                     }
                 }
-            }
-        }
 
-        Spacer(modifier = Modifier.weight(1f))
+                Spacer(modifier = Modifier.weight(1f))
 
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.align(Alignment.CenterHorizontally)
-        ) {
-            repeat(5) { index ->
-                IndicatorView(
-                    index = (index + 1).toString(), isSelected = index < selectedImageCount
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        Button(
-            colors = ButtonDefaults.buttonColors(
-                contentColor = Color.White, containerColor = colorResource(id = R.color.dark_blue)
-            ),
-            onClick = { isSheetPresented = true },
-            modifier = Modifier
-                .align(Alignment.CenterHorizontally)
-                .padding(16.dp),
-            enabled = selectedImageCount == 5
-        ) {
-            Text("Upload Images")
-        }
-
-
-        if (isSheetPresented) {
-            RatingBottomSheet(
-                onDismiss = {
-                    isSheetPresented = false
-                    selectedImageCount = 0
-                    imageUris = List(5) { null }
-                },
-                imageUris = imageUris,
-                onSuccess = {
-                    onSuccess()
-                    selectedImageCount = 0
-                    imageUris = List(5) { null }
-                    isSheetPresented = false
-
-                })
-        }
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        if (showAlertDialog.value) {
-
-            AlertDialog(onDismissRequest = {
-                showAlertDialog.value = false
-                onDismiss()
-            },
-                title = { Text("Logout?") },
-                text = { Text("Are you sure, do you wanna log out?") },
-                dismissButton = {
-                    Button(
-                        onClick = {
-                            showAlertDialog.value = false
-                            onDismiss()
-                        }, colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.Gray
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                ) {
+                    repeat(5) { index ->
+                        IndicatorView(
+                            index = (index + 1).toString(), isSelected = index < selectedImageCount
                         )
-                    ) {
-                        Text("Cancel")
                     }
-                },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            //clear Shared Preference
+                }
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                Button(
+                    colors = ButtonDefaults.buttonColors(
+                        contentColor = Color.White,
+                        containerColor = colorResource(id = R.color.dark_blue)
+                    ),
+                    onClick = { isSheetPresented = true },
+                    modifier = Modifier
+                        .align(Alignment.CenterHorizontally)
+                        .padding(16.dp),
+                    enabled = selectedImageCount == 5
+                ) {
+                    Text("Upload Images")
+                }
 
 
-                            ServiceBuilder.buildService(RetrofitInterface::class.java).logout(
-                                getSavedAppId(context)
-                            ).enqueue(object : Callback<UpdateFCMResponse> {
-                                override fun onResponse(
-                                    call: Call<UpdateFCMResponse>,
-                                    response: Response<UpdateFCMResponse>
-                                ) {
-                                    if (response.body()!!.Success) {
+                if (isSheetPresented) {
+                    RatingBottomSheet(
+                        onDismiss = {
+                            isSheetPresented = false
+                            selectedImageCount = 0
+                            imageUris = List(5) { null }
+                        },
+                        imageUris = imageUris,
+                        onSuccess = {
+                            onSuccess()
+                            selectedImageCount = 0
+                            imageUris = List(5) { null }
+                            isSheetPresented = false
 
-                                        clearAppId(context)
-                                        context.startActivity(
-                                            Intent(
-                                                context, LoginActivity::class.java
-                                            )
-                                        )
-                                        context.finish()
-                                    } else Toast.makeText(
-                                        context, response.body()!!.message, Toast.LENGTH_SHORT
-                                    ).show()
-                                }
+                        })
+                }
 
-                                override fun onFailure(
-                                    call: Call<UpdateFCMResponse>, t: Throwable
-                                ) {
-                                    Toast.makeText(context, "Logout failed!", Toast.LENGTH_SHORT)
-                                        .show()
-                                }
+                Spacer(modifier = Modifier.weight(1f))
 
-                            })
+                if (showAlertDialog.value) {
+
+                    AlertDialog(onDismissRequest = {
+                        showAlertDialog.value = false
+                        onDismiss()
+                    },
+                        title = { Text("Logout?") },
+                        text = { Text("Are you sure, do you wanna log out?") },
+                        dismissButton = {
+                            Button(
+                                onClick = {
+                                    showAlertDialog.value = false
+                                    onDismiss()
+                                }, colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color.Gray
+                                )
+                            ) {
+                                Text("Cancel")
+                            }
+                        },
+                        confirmButton = {
+                            Button(
+                                onClick = {
+
+                                    ServiceBuilder.buildService(RetrofitInterface::class.java)
+                                        .logout(
+                                            getSavedAppId(context)
+                                        ).enqueue(object : Callback<UpdateFCMResponse> {
+                                            override fun onResponse(
+                                                call: Call<UpdateFCMResponse>,
+                                                response: Response<UpdateFCMResponse>
+                                            ) {
+                                                if (response.body()!!.Success) {
+
+                                                    clearAppId(context)
+                                                    context.startActivity(
+                                                        Intent(
+                                                            context, LoginActivity::class.java
+                                                        )
+                                                    )
+                                                    context.finish()
+                                                } else Toast.makeText(
+                                                    context,
+                                                    response.body()!!.message,
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+
+                                            override fun onFailure(
+                                                call: Call<UpdateFCMResponse>, t: Throwable
+                                            ) {
+                                                Toast.makeText(
+                                                    context,
+                                                    "Logout failed!",
+                                                    Toast.LENGTH_SHORT
+                                                )
+                                                    .show()
+                                            }
+
+                                        })
 
 
-                            showAlertDialog.value = false
+                                    showAlertDialog.value = false
 
 
-                        }, colors = ButtonDefaults.buttonColors(
-                            containerColor = colorResource(id = R.color.dark_blue)
-                        )
-                    ) {
-                        Text("Logout")
-                    }
-                })
-        }
-        Box(
-            modifier = Modifier
-                .size(78.dp)
-                .align(Alignment.End)
-                .padding(bottom = 32.dp, end = 32.dp)
-                .clip(CircleShape)
-                .background(colorResource(id = R.color.dark_blue))
-                .clickable(onClick = {
-                    showAlertDialog.value = true
-                })
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ExitToApp,
-                contentDescription = "Placeholder",
-                tint = Color.White,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(12.dp)
-            )
+                                }, colors = ButtonDefaults.buttonColors(
+                                    containerColor = colorResource(id = R.color.dark_blue)
+                                )
+                            ) {
+                                Text("Logout")
+                            }
+                        })
+                }
+                //        Box(
+                //            modifier = Modifier
+                //                .size(78.dp)
+                //                .align(Alignment.End)
+                //                .padding(bottom = 32.dp, end = 32.dp)
+                //                .clip(CircleShape)
+                //                .background(colorResource(id = R.color.dark_blue))
+                //                .clickable(onClick = {
+                //                    showAlertDialog.value = true
+                //                })
+                //        ) {
+                //            Icon(
+                //                imageVector = Icons.AutoMirrored.Filled.ExitToApp,
+                //                contentDescription = "Placeholder",
+                //                tint = Color.White,
+                //                modifier = Modifier
+                //                    .fillMaxSize()
+                //                    .padding(12.dp)
+                //            )
+                //        }
+            }
         }
     }
+
 }
 
 fun onDismiss() {
