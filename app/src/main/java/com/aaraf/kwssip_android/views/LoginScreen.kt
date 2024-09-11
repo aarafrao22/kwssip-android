@@ -19,11 +19,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -47,6 +50,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -76,29 +81,31 @@ fun LoginScreen() {
     val password = rememberSaveable { mutableStateOf("") }
     val userNameError = rememberSaveable { mutableStateOf<String?>(null) }
     val passwordError = rememberSaveable { mutableStateOf<String?>(null) }
-    val context = LocalContext.current // Get the current context
-    val coroutineScope = rememberCoroutineScope() // For starting the activity
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF0F0F0)),
-        contentAlignment = Center
+            .background(Color(0xFFF0F0F0)), contentAlignment = Center
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
+
             modifier = Modifier
                 .padding(30.dp)
                 .fillMaxWidth()
+                .imePadding()
+                .verticalScroll(rememberScrollState(), reverseScrolling = true)
                 .wrapContentHeight()
         ) {
             Image(
                 painter = painterResource(id = R.drawable.blue_logo),
                 contentDescription = "Splash Background",
                 modifier = Modifier
-                    .height(120.dp) // Adjust the height as needed
-                    .width(120.dp)  // Adjust the width as needed
+                    .height(120.dp)
+                    .width(120.dp)
             )
 
             Spacer(modifier = Modifier.height(8.dp)) // Space between image and text
@@ -132,6 +139,7 @@ fun LoginScreen() {
                 value = password.value,
                 onValueChange = { password.value = it },
                 placeholder = "Enter Password",
+                visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 errorMessage = passwordError.value
             )
@@ -141,15 +149,11 @@ fun LoginScreen() {
             Button(
                 shape = RoundedCornerShape(32.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = colorResource(id = R.color.theme_blue),
-                    contentColor = White
+                    containerColor = colorResource(id = R.color.theme_blue), contentColor = White
                 ),
                 onClick = {
                     if (validateInputs(
-                            username.value,
-                            password.value,
-                            userNameError,
-                            passwordError
+                            username.value, password.value, userNameError, passwordError
                         )
                     ) coroutineScope.launch {
 
@@ -169,8 +173,7 @@ fun LoginScreen() {
                                 }
 
                                 override fun onFailure(
-                                    call: Call<UpdateFCMResponse>,
-                                    t: Throwable
+                                    call: Call<UpdateFCMResponse>, t: Throwable
                                 ) {
                                     Log.d(TAG, "onFailure: ${t.message}")
                                 }
@@ -218,12 +221,14 @@ fun loginField(
     value: String,
     onValueChange: (String) -> Unit,
     placeholder: String,
+    visualTransformation: VisualTransformation = VisualTransformation.None,
     errorMessage: String?,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default
 ) {
     Column {
         TextField(
             value = value,
+            visualTransformation = visualTransformation,
             colors = TextFieldDefaults.textFieldColors(
                 disabledTextColor = Color.Transparent,
                 containerColor = White,
@@ -302,8 +307,7 @@ suspend fun callApi(email: String, password: String, context: Context, fcm_token
             ServiceBuilder.buildService(RetrofitInterface::class.java)
                 .login(email, password, "1", fcm_token).enqueue(object : Callback<LoginResponse> {
                     override fun onResponse(
-                        call: Call<LoginResponse>,
-                        response: Response<LoginResponse>
+                        call: Call<LoginResponse>, response: Response<LoginResponse>
                     ) {
                         val responseBody = response.body()
 

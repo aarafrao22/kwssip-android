@@ -71,7 +71,7 @@ fun PendingTaskView() {
     val itemListCompleted = remember { mutableStateListOf<Complaint>() }
     val itemListPending = remember { mutableStateListOf<Complaint>() }
     val showList = remember { mutableStateOf(true) }
-    val isBefore = remember { mutableStateOf(true) }
+    val isPreInstallation = remember { mutableStateOf(true) }
     val taskId = remember { mutableStateOf("") }
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -132,18 +132,19 @@ fun PendingTaskView() {
         HomeView(
             onSuccess = {
                 showList.value = true
-            },
+            }, isBefore = true,
             onPostClick = {
-                isBefore.value = false
+                isPreInstallation.value = false
             })
     }
 
-    if (!isBefore.value) {
+    if (!isPreInstallation.value) {
 
         //post installation
         HomeView(
             onSuccess = {
                 showList.value = true
+                isPreInstallation.value = true
             }, isBefore = false,
             onPostClick = {}
         )

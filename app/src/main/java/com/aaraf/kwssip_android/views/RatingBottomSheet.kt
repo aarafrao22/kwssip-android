@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -95,7 +96,9 @@ fun RatingBottomSheet(
     ModalBottomSheet(
         onDismissRequest = { onDismiss() },
         sheetState = bottomSheetState,
-        modifier = Modifier.background(Color(0x884B4B4B)),
+        modifier = Modifier
+            .background(Color(0x884B4B4B))
+            .imePadding(),
         containerColor = Color(0xFF3EB3E0),
         dragHandle = { BottomSheetDefaults.DragHandle() },
     ) {
@@ -188,7 +191,7 @@ fun RatingBottomSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(start = 8.dp, end = 8.dp)
-                    .height(160.dp),
+                    .height(100.dp),
             )
 
             Spacer(modifier = Modifier.height(24.dp)) // Adjusted spacing
@@ -218,6 +221,7 @@ fun RatingBottomSheet(
                             onSuccess = {
                                 showAlertDialog.value = true
                                 Log.d(TAG, "RatingBottomSheet: $beforeImageUris")
+
                                 Log.d(TAG, "RatingBottomSheet: $afterImageUris")
                                 onSuccess()
                             })

@@ -59,6 +59,7 @@ import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -253,7 +254,7 @@ fun HomeView(
                     RatingBottomSheet(
                         onDismiss = {
                             isSheetPresented = false
-                            selectedImageCount = 0
+//                            selectedImageCount = 0
 //                            beforeUriList.clear()
 //                            beforeUriList.addAll(List(5) { null })
                         },
@@ -264,7 +265,9 @@ fun HomeView(
                             selectedImageCount = 0
                             beforeImageUris.clear()
                             beforeImageUris.addAll(List(5) { null })
+                            afterImageUris.addAll(List(5) { null })
                             isSheetPresented = false
+
                         })
                 }
 
@@ -424,12 +427,14 @@ fun CustomTextFieldBottomSheet(
     onValueChange: (String) -> Unit,
     placeholder: String,
     errorMessage: String?,
+    visualTransformation: VisualTransformation = VisualTransformation.None,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     modifier: Modifier,
 ) {
     Column(modifier = modifier) {
         TextField(
             value = value,
+            visualTransformation = visualTransformation,
             colors = TextFieldDefaults.textFieldColors(
                 disabledTextColor = Color.Transparent,
                 containerColor = Color.White,
@@ -452,7 +457,9 @@ fun CustomTextFieldBottomSheet(
                     Text(
                         text = placeholder,
                         color = Color.Gray,
-                        modifier = Modifier.align(Alignment.TopStart)
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .fillMaxSize()
                     )
                 }
             },
