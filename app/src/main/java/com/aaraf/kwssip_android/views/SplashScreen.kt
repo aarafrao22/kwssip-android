@@ -56,7 +56,7 @@ fun SplashScreen(modifier: Modifier = Modifier) {
             )
             Spacer(modifier = Modifier.height(8.dp)) // Space between image and text
             Text(
-                text = "KWSSIP",
+                text = "KWSC",
                 textAlign = TextAlign.Center,
                 style = MaterialTheme.typography.bodyMedium.copy(
                     color = Color.White, fontSize = 38.sp, fontWeight = FontWeight.Bold

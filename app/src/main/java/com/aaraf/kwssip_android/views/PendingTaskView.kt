@@ -76,7 +76,6 @@ fun PendingTaskView() {
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
 
-
     if (taskId.value != "") {
         Log.d(TAG, "PendingTaskView: ${taskId.value}")
     }
@@ -149,7 +148,6 @@ fun PendingTaskView() {
             onPostClick = {}
         )
     }
-
 
     BackHandler {
         if (!showList.value) {

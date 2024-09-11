@@ -111,7 +111,7 @@ fun LoginScreen() {
             Spacer(modifier = Modifier.height(8.dp)) // Space between image and text
 
             Text(
-                text = "KWSSIP",
+                text = "KWSC",
                 textAlign = TextAlign.Center,
                 style = MaterialTheme.typography.bodyMedium.copy(
                     color = colorResource(id = R.color.theme_blue),
