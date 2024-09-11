@@ -55,11 +55,19 @@ interface RetrofitInterface {
         @Part CustomerFeedback: MultipartBody.Part?,
         @Part CustomerContact: MultipartBody.Part?,
         @Part Rating: MultipartBody.Part?,
-        @Part img1: MultipartBody.Part?,
-        @Part img2: MultipartBody.Part?,
-        @Part img3: MultipartBody.Part?,
-        @Part img4: MultipartBody.Part?,
-        @Part img5: MultipartBody.Part?,
+
+        @Part before_img1: MultipartBody.Part?,
+        @Part before_img2: MultipartBody.Part?,
+        @Part before_img3: MultipartBody.Part?,
+        @Part before_img4: MultipartBody.Part?,
+        @Part before_img5: MultipartBody.Part?,
+
+        @Part after_img1: MultipartBody.Part?,
+        @Part after_img2: MultipartBody.Part?,
+        @Part after_img3: MultipartBody.Part?,
+        @Part after_img4: MultipartBody.Part?,
+        @Part after_img5: MultipartBody.Part?,
+
         @Part complaintId: MultipartBody.Part?,
 
         ): Call<FeedbackResponse>

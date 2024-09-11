@@ -64,12 +64,14 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
+//todo:  /*getSavedAppId(context)*/ as 54
 @Composable
 @Preview(showBackground = true)
 fun PendingTaskView() {
     val itemListCompleted = remember { mutableStateListOf<Complaint>() }
     val itemListPending = remember { mutableStateListOf<Complaint>() }
     val showList = remember { mutableStateOf(true) }
+    val isBefore = remember { mutableStateOf(true) }
     val taskId = remember { mutableStateOf("") }
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -78,7 +80,6 @@ fun PendingTaskView() {
     if (taskId.value != "") {
         Log.d(TAG, "PendingTaskView: ${taskId.value}")
     }
-
 
     if (showList.value) {
         LaunchedEffect(Unit) {
@@ -92,6 +93,9 @@ fun PendingTaskView() {
                                 response: Response<ComplaintsListModel>
                             ) {
                                 val tasks = response.body()!!.complaints
+
+                                itemListPending.clear()
+                                itemListCompleted.clear()
 
                                 for (i in tasks) {
                                     if (i.action == "Completed") {
@@ -112,6 +116,7 @@ fun PendingTaskView() {
                 }
             }
         }
+
         TaskListView(
             itemListPending = itemListPending,
             itemListCompleted = itemListCompleted,
@@ -122,9 +127,26 @@ fun PendingTaskView() {
             })
 
     } else {
-        HomeView(onSuccess = {
-            showList.value = true
-        })
+
+        //pre installation
+        HomeView(
+            onSuccess = {
+                showList.value = true
+            },
+            onPostClick = {
+                isBefore.value = false
+            })
+    }
+
+    if (!isBefore.value) {
+
+        //post installation
+        HomeView(
+            onSuccess = {
+                showList.value = true
+            }, isBefore = false,
+            onPostClick = {}
+        )
     }
 
 
@@ -134,7 +156,6 @@ fun PendingTaskView() {
         } else {
             val activity = context as Activity
             activity.finish()
-
         }
     }
 }
@@ -163,7 +184,8 @@ fun TaskListView(
                             .padding(16.dp)
                     ) {
                         Box(
-                            contentAlignment = Alignment.TopEnd, modifier = Modifier
+                            contentAlignment = Alignment.TopEnd,
+                            modifier = Modifier
                                 .size(42.dp)
                                 .align(Alignment.TopEnd)
                                 .clip(CircleShape)
@@ -260,18 +282,9 @@ fun TaskListView(
                     }
 
                     Text(
-                        text = "Welcome,",
-                        color = Color(0xFF21637D),
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center
-                    )
-
-                    Text(
-                        text = getDriverName(LocalContext.current),
+                        text = "Welcome, ${getDriverName(LocalContext.current)}",
                         color = Color(0xFF43A5E4),
-                        fontSize = 32.sp,
+                        fontSize = 20.sp,
                         textAlign = TextAlign.Center,
                         fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.fillMaxWidth()

@@ -53,6 +53,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aaraf.kwssip_android.R
+import com.aaraf.kwssip_android.Utils
 import com.aaraf.kwssip_android.Utils.TASK_ID
 import com.aaraf.kwssip_android.model.FeedbackResponse
 import com.aaraf.kwssip_android.network.RetrofitInterface
@@ -60,8 +61,9 @@ import com.aaraf.kwssip_android.network.ServiceBuilder
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
 import okhttp3.MultipartBody.Part.Companion.createFormData
-import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.asRequestBody
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -72,9 +74,15 @@ import kotlin.coroutines.resumeWithException
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RatingBottomSheet(onDismiss: () -> Unit, imageUris: List<Uri?>, onSuccess: () -> Unit) {
-
+fun RatingBottomSheet(
+    onDismiss: () -> Unit,
+    afterImageUris: List<Uri?>,
+    onSuccess: () -> Unit
+) {
     val name = rememberSaveable { mutableStateOf("") }
+
+    val beforeImageUris = Utils.BEFORE_LIST_URI
+
     val context = LocalContext.current
     val comment = rememberSaveable { mutableStateOf("") }
     val phone = rememberSaveable { mutableStateOf("") }
@@ -199,13 +207,18 @@ fun RatingBottomSheet(onDismiss: () -> Unit, imageUris: List<Uri?>, onSuccess: (
                             customerContact = phone.value,
                             rating = rating.intValue,
                             driverId = Integer.valueOf(driverID),
-                            imageUris = imageUris,
+                            beforeImageUris = beforeImageUris,
+                            afterImageUris = afterImageUris,
                             onFailure = {
                                 showAlertDialog.value = false
+                                Log.d(TAG, "RatingBottomSheet: ${beforeImageUris.size}")
+                                Log.d(TAG, "RatingBottomSheet: ${afterImageUris.size}")
                                 Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
                             },
                             onSuccess = {
                                 showAlertDialog.value = true
+                                Log.d(TAG, "RatingBottomSheet: $beforeImageUris")
+                                Log.d(TAG, "RatingBottomSheet: $afterImageUris")
                                 onSuccess()
                             })
 
@@ -310,44 +323,40 @@ suspend fun upload(
     driverId: Int,
     onSuccess: (String) -> Unit,
     onFailure: (String) -> Unit,
-    imageUris: List<Uri?>
+    beforeImageUris: List<Uri?>,
+    afterImageUris: List<Uri?>,
 ): Boolean {
     return suspendCancellableCoroutine { continuation ->
 
         val progressDialog = ProgressDialog(context)
         progressDialog.setMessage("Loading...")
-        progressDialog.setCancelable(false) // Optional: Prevent the user from canceling the dialog
+        progressDialog.setCancelable(false)
         progressDialog.show()
-        var taskId: String = ""
 
-        if (!TASK_ID.equals(null)) {
-            taskId = TASK_ID
-        }
+        val taskId = TASK_ID ?: ""
 
         val customerNameM = createFormData("CustomerName", customerName)
-        val customerContactM = createFormData("CustomerContact", customerContact as String)
+        val customerContactM = createFormData("CustomerContact", customerContact)
         val customerFeedbackM = createFormData("CustomerFeedback", customerFeedback)
         val ratingM = createFormData("Rating", rating.toString())
         val complaintIdM = createFormData("complaintId", taskId)
         val driverIdM = createFormData("Driver_id", driverId.toString())
 
-
-        val parts = imageUris.mapIndexed { index, uri ->
-            uri?.let {
-                val requestFile: RequestBody =
-                    RequestBody.create("*/*".toMediaTypeOrNull(), File(it.path!!))
-
-                createFormData(
-                    "img${index + 1}", it.lastPathSegment ?: "image${index + 1}", requestFile
-                )
+        fun createPartFromUri(name: String, uri: Uri?): MultipartBody.Part? {
+            return uri?.let {
+                val file = File(it.path!!)
+                val requestFile = file.asRequestBody("*/*".toMediaTypeOrNull())
+                createFormData(name, it.lastPathSegment ?: "image", requestFile)
             }
-        }.take(5)
+        }
 
-        val img1 = parts.getOrNull(0)
-        val img2 = parts.getOrNull(1)
-        val img3 = parts.getOrNull(2)
-        val img4 = parts.getOrNull(3)
-        val img5 = parts.getOrNull(4)
+        val beforeParts = beforeImageUris.mapIndexed { index, uri ->
+            createPartFromUri("before_img${index + 1}", uri)
+        }
+
+        val afterParts = afterImageUris.mapIndexed { index, uri ->
+            createPartFromUri("after_img${index + 1}", uri)
+        }
 
         ServiceBuilder.buildService(RetrofitInterface::class.java).sendFeedback(
             Driver_id = driverIdM,
@@ -355,40 +364,50 @@ suspend fun upload(
             CustomerFeedback = customerFeedbackM,
             CustomerContact = customerContactM,
             Rating = ratingM,
-            img1 = img1,
-            img2 = img2,
-            img3 = img3,
-            img4 = img4,
-            img5 = img5,
+            before_img1 = beforeParts.getOrNull(0),
+            before_img2 = beforeParts.getOrNull(1),
+            before_img3 = beforeParts.getOrNull(2),
+            before_img4 = beforeParts.getOrNull(3),
+            before_img5 = beforeParts.getOrNull(4),
+            after_img1 = afterParts.getOrNull(0),
+            after_img2 = afterParts.getOrNull(1),
+            after_img3 = afterParts.getOrNull(2),
+            after_img4 = afterParts.getOrNull(3),
+            after_img5 = afterParts.getOrNull(4),
             complaintId = complaintIdM
         ).enqueue(object : Callback<FeedbackResponse> {
             override fun onResponse(
-                call: Call<FeedbackResponse>, response: Response<FeedbackResponse>
+                call: Call<FeedbackResponse>,
+                response: Response<FeedbackResponse>
             ) {
                 progressDialog.dismiss()
-                if (response.isSuccessful && response.body()!!.Success) {
-
-                    Log.d(TAG, "onResponse: ${response.body()?.message}")
-                    Toast.makeText(context, response.body()?.message, Toast.LENGTH_SHORT).show()
-                    onSuccess(response.body()?.message!!)
-                    continuation.resume(true)
+                if (response.isSuccessful && response.body()?.Success == true) {
+                    response.body()?.message?.let {
+                        Log.d(TAG, "onResponse: $it")
+                        Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+                        onSuccess(it)
+                        continuation.resume(true)
+                    }
                 } else {
-                    Toast.makeText(context, response.body()?.message, Toast.LENGTH_SHORT).show()
-                    onFailure(response.body()?.message!!)
-                    Log.d(TAG, "onResponse: ${response.body()?.message}")
-                    continuation.resume(false)
+                    response.body()?.message?.let {
+                        Log.d(TAG, "onResponse: $it")
+                        Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+                        onFailure(it)
+                        continuation.resume(false)
+                    }
                 }
             }
 
             override fun onFailure(call: Call<FeedbackResponse>, t: Throwable) {
                 progressDialog.dismiss()
-                onFailure(t.message!!)
                 Log.d(TAG, "onFailure: ${t.message}")
+                onFailure(t.message ?: "Unknown error")
                 continuation.resumeWithException(t)
             }
         })
     }
 }
+
 
 
 

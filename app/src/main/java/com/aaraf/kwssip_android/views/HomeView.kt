@@ -44,6 +44,7 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -59,12 +60,12 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import com.aaraf.kwssip_android.LoginActivity
 import com.aaraf.kwssip_android.R
+import com.aaraf.kwssip_android.Utils
 import com.aaraf.kwssip_android.model.UpdateFCMResponse
 import com.aaraf.kwssip_android.network.RetrofitInterface
 import com.aaraf.kwssip_android.network.ServiceBuilder
@@ -75,30 +76,38 @@ import retrofit2.Callback
 import retrofit2.Response
 
 @Composable
-fun HomeView(taskId: String = "", onSuccess: () -> Unit) {
+fun HomeView(
+    isBefore: Boolean = true,
+    onSuccess: () -> Unit,
+    onPostClick: () -> Unit,
+) {
     var isSheetPresented by remember { mutableStateOf(false) }
     val showAlertDialog = remember { mutableStateOf(false) }
-    val isWorkInQueue = remember { mutableStateOf(false) }
-    val showImagesLayout = remember { mutableStateOf(false) }
     var selectedImageCount by remember { mutableIntStateOf(0) }
-    var imageUris by remember { mutableStateOf(List(5) { null as Uri? }) }
+
+    val beforeImageUris = remember { mutableStateListOf<Uri?>(null, null, null, null, null) }
+    val afterImageUris = remember { mutableStateListOf<Uri?>(null, null, null, null, null) }
+
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current as Activity
-
 
     val imagePickers = List(5) { index ->
         rememberLauncherForActivityResult(
             contract = ActivityResultContracts.StartActivityForResult()
         ) { result: ActivityResult ->
             if (result.resultCode == Activity.RESULT_OK) {
-                imageUris = imageUris.toMutableList().apply {
-                    this[index] = result.data?.data
+                val pickedUri = result.data?.data
+                if (pickedUri != null) {
+                    if (isBefore) {
+                        beforeImageUris[index] = pickedUri
+                    } else {
+                        afterImageUris[index] = pickedUri
+                    }
+                    selectedImageCount++
                 }
-                selectedImageCount++
             }
         }
     }
-
 
     Scaffold { paddingValues: PaddingValues ->
         Box(modifier = Modifier.padding(paddingValues)) {
@@ -108,9 +117,11 @@ fun HomeView(taskId: String = "", onSuccess: () -> Unit) {
                     .background(Color(0xFFFFFFFF)),
             ) {
                 Spacer(modifier = Modifier.weight(0.2f))
-                Box(modifier = Modifier
-                    .padding(16.dp)
-                    .fillMaxWidth()) {
+                Box(
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .fillMaxWidth()
+                ) {
                     Box(
                         modifier = Modifier
                             .size(42.dp)
@@ -131,19 +142,20 @@ fun HomeView(taskId: String = "", onSuccess: () -> Unit) {
                         )
                     }
                 }
+
                 Text(
-                    text = "Welcome,",
-                    color = Color(0xFF21637D),
+                    text = "Welcome, ${getDriverName(LocalContext.current)}",
+                    color = Color(0xFF43A5E4),
                     fontSize = 20.sp,
+                    textAlign = TextAlign.Center,
                     fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                    modifier = Modifier.fillMaxWidth()
                 )
 
                 Text(
-                    text = getDriverName(context),
-                    color = Color(0xFF43A5E4),
-                    fontSize = 32.sp,
-
+                    text = if (isBefore) "Capture Pre-Installation" else "Capture Post-Installation",
+                    color = Color(0xFF21637D),
+                    fontSize = 20.sp,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.align(Alignment.CenterHorizontally)
                 )
@@ -160,15 +172,19 @@ fun HomeView(taskId: String = "", onSuccess: () -> Unit) {
                             repeat(3) { colIndex ->
                                 val index = rowIndex * 3 + colIndex
                                 if (index < 5) {
-                                    ImagePickerView(selectedImage = imageUris[index], onClick = {
-
-                                        coroutineScope.launch {
-                                            ImagePicker.with(context).cameraOnly().crop(512f, 512f)
-                                                .maxResultSize(512, 512).createIntent { intent ->
-                                                    imagePickers[index].launch(intent)
-                                                }
+                                    ImagePickerView(
+                                        selectedImage = if (isBefore) beforeImageUris[index] else afterImageUris[index],
+                                        onClick = {
+                                            coroutineScope.launch {
+                                                ImagePicker.with(context).cameraOnly()
+                                                    .crop(512f, 512f)
+                                                    .maxResultSize(512, 512)
+                                                    .createIntent { intent ->
+                                                        imagePickers[index].launch(intent)
+                                                    }
+                                            }
                                         }
-                                    })
+                                    )
                                 }
                             }
                         }
@@ -190,54 +206,83 @@ fun HomeView(taskId: String = "", onSuccess: () -> Unit) {
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                Button(
-                    colors = ButtonDefaults.buttonColors(
-                        contentColor = Color.White,
-                        containerColor = colorResource(id = R.color.dark_blue)
-                    ),
-                    onClick = { isSheetPresented = true },
-                    modifier = Modifier
-                        .align(Alignment.CenterHorizontally)
-                        .padding(16.dp),
-                    enabled = selectedImageCount == 5
-                ) {
-                    Text("Upload Images")
+                if (!isBefore) {
+                    Button(
+                        colors = ButtonDefaults.buttonColors(
+                            contentColor = Color.White,
+                            containerColor = colorResource(id = R.color.dark_blue)
+                        ),
+                        onClick = { isSheetPresented = true },
+                        modifier = Modifier
+                            .align(Alignment.CenterHorizontally)
+                            .padding(16.dp),
+                        enabled = selectedImageCount == 2
+                    ) {
+                        Text("Upload Images")
+                    }
+
+                } else {
+                    Button(
+                        colors = ButtonDefaults.buttonColors(
+                            contentColor = Color.White,
+                            containerColor = colorResource(id = R.color.dark_blue)
+                        ),
+                        onClick = {
+                            onPostClick()
+                            Utils.BEFORE_LIST_URI = beforeImageUris
+                        },
+                        modifier = Modifier
+                            .align(Alignment.CenterHorizontally)
+                            .padding(16.dp),
+                        enabled = selectedImageCount == 2
+                    ) {
+                        Text("Capture Post Installation")
+                    }
                 }
 
-
                 if (isSheetPresented) {
+                    Log.d(TAG, "HomeView before: ${beforeImageUris.size}")
+                    for (i in beforeImageUris) {
+                        Log.d(TAG, "HomeView before: $i")
+                    }
+
+                    Log.d(TAG, "HomeView before: ${afterImageUris.size}")
+                    for (i in afterImageUris) {
+                        Log.d(TAG, "HomeView after: $i")
+                    }
                     RatingBottomSheet(
                         onDismiss = {
                             isSheetPresented = false
                             selectedImageCount = 0
-                            imageUris = List(5) { null }
+//                            beforeUriList.clear()
+//                            beforeUriList.addAll(List(5) { null })
                         },
-                        imageUris = imageUris,
+//                        beforeImageUris = beforeImageUris,
+                        afterImageUris = afterImageUris,
                         onSuccess = {
                             onSuccess()
                             selectedImageCount = 0
-                            imageUris = List(5) { null }
+                            beforeImageUris.clear()
+                            beforeImageUris.addAll(List(5) { null })
                             isSheetPresented = false
-
                         })
                 }
 
                 Spacer(modifier = Modifier.weight(1f))
 
                 if (showAlertDialog.value) {
-
-                    AlertDialog(onDismissRequest = {
-                        showAlertDialog.value = false
-                        onDismiss()
-                    },
+                    AlertDialog(
+                        onDismissRequest = {
+                            showAlertDialog.value = false
+                        },
                         title = { Text("Logout?") },
-                        text = { Text("Are you sure, do you wanna log out?") },
+                        text = { Text("Are you sure, do you want to log out?") },
                         dismissButton = {
                             Button(
                                 onClick = {
                                     showAlertDialog.value = false
-                                    onDismiss()
-                                }, colors = ButtonDefaults.buttonColors(
+                                },
+                                colors = ButtonDefaults.buttonColors(
                                     containerColor = Color.Gray
                                 )
                             ) {
@@ -247,81 +292,56 @@ fun HomeView(taskId: String = "", onSuccess: () -> Unit) {
                         confirmButton = {
                             Button(
                                 onClick = {
-
                                     ServiceBuilder.buildService(RetrofitInterface::class.java)
-                                        .logout(
-                                            getSavedAppId(context)
-                                        ).enqueue(object : Callback<UpdateFCMResponse> {
+                                        .logout(getSavedAppId(context))
+                                        .enqueue(object : Callback<UpdateFCMResponse> {
                                             override fun onResponse(
                                                 call: Call<UpdateFCMResponse>,
                                                 response: Response<UpdateFCMResponse>
                                             ) {
-                                                if (response.body()!!.Success) {
-
+                                                if (response.body()?.Success == true) {
                                                     clearAppId(context)
                                                     context.startActivity(
-                                                        Intent(
-                                                            context, LoginActivity::class.java
-                                                        )
+                                                        Intent(context, LoginActivity::class.java)
                                                     )
                                                     context.finish()
-                                                } else Toast.makeText(
-                                                    context,
-                                                    response.body()!!.message,
-                                                    Toast.LENGTH_SHORT
-                                                ).show()
+                                                } else {
+                                                    Toast.makeText(
+                                                        context,
+                                                        response.body()?.message
+                                                            ?: "Logout failed!",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
+                                                }
                                             }
 
                                             override fun onFailure(
-                                                call: Call<UpdateFCMResponse>, t: Throwable
+                                                call: Call<UpdateFCMResponse>,
+                                                t: Throwable
                                             ) {
                                                 Toast.makeText(
                                                     context,
                                                     "Logout failed!",
                                                     Toast.LENGTH_SHORT
-                                                )
-                                                    .show()
+                                                ).show()
                                             }
-
                                         })
-
-
                                     showAlertDialog.value = false
-
-
-                                }, colors = ButtonDefaults.buttonColors(
+                                },
+                                colors = ButtonDefaults.buttonColors(
                                     containerColor = colorResource(id = R.color.dark_blue)
                                 )
                             ) {
                                 Text("Logout")
                             }
-                        })
+                        }
+                    )
                 }
-                //        Box(
-                //            modifier = Modifier
-                //                .size(78.dp)
-                //                .align(Alignment.End)
-                //                .padding(bottom = 32.dp, end = 32.dp)
-                //                .clip(CircleShape)
-                //                .background(colorResource(id = R.color.dark_blue))
-                //                .clickable(onClick = {
-                //                    showAlertDialog.value = true
-                //                })
-                //        ) {
-                //            Icon(
-                //                imageVector = Icons.AutoMirrored.Filled.ExitToApp,
-                //                contentDescription = "Placeholder",
-                //                tint = Color.White,
-                //                modifier = Modifier
-                //                    .fillMaxSize()
-                //                    .padding(12.dp)
-                //            )
-                //        }
             }
         }
     }
-
 }
+
 
 fun onDismiss() {
     Log.d(TAG, "onDismiss: ")
@@ -449,9 +469,3 @@ fun CustomTextFieldBottomSheet(
     }
 }
 
-
-@Composable
-@Preview(showBackground = true)
-fun HomeViewPreview() {
-    HomeView(onSuccess = {})
-}
