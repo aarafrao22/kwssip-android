@@ -6,6 +6,7 @@ data class Complaint(
     val complaintID: String,
     val coordinates: String,
     val date: String,
+    val complaintNumber: String,
     val end_date: String,
     val driver_name: String,
     val location: String

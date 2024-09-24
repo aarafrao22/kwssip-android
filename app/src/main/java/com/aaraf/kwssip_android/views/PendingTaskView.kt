@@ -64,7 +64,7 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-//todo:  /*getSavedAppId(context)*/ as 54
+
 @Composable
 @Preview(showBackground = true)
 fun PendingTaskView() {
@@ -85,7 +85,8 @@ fun PendingTaskView() {
             coroutineScope.launch {
                 try {
                     ServiceBuilder.buildService(RetrofitInterface::class.java)
-                        .getComplaints(/*getSavedAppId(context)*/"54"
+                        .getComplaints(
+                            getSavedAppId(context)
                         ).enqueue(object : Callback<ComplaintsListModel> {
                             override fun onResponse(
                                 call: Call<ComplaintsListModel>,
@@ -165,7 +166,6 @@ fun TaskListView(
 ) {
     val showAlertDialog = remember { mutableStateOf(false) }
     val context = LocalContext.current
-
 
     Scaffold { paddingValues: PaddingValues ->
 
@@ -290,7 +290,7 @@ fun TaskListView(
                     )
                     Spacer(modifier = Modifier.height(48.dp))
                     Text(
-                        text = "Pending Tasks",
+                        text = "Pending Tasks: ${itemListPending.size}",
                         color = Color(0xFF919191),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold
@@ -306,13 +306,12 @@ fun TaskListView(
                 item {
                     Spacer(modifier = Modifier.height(18.dp))
                     Text(
-                        text = "Completed Tasks",
+                        text = "Completed Tasks: ${itemListCompleted.size}",
                         color = Color(0xFF919191),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.height(18.dp))
-
 
                 }
 
@@ -380,6 +379,12 @@ fun PendingItem(item: Complaint, onClick: () -> Unit) {
             Column(
                 modifier = Modifier.weight(1f), horizontalAlignment = Alignment.Start
             ) {
+                Text(
+                    text = "Complain Number: ${item.complaintNumber}",
+                    color = Color(0xFF777777),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
                 Text(
                     text = item.Veh_no,
                     color = Color(0xFF777777),

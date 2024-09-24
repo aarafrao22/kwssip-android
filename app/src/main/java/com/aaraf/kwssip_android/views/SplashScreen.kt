@@ -63,7 +63,7 @@ fun SplashScreen(modifier: Modifier = Modifier) {
                 )
             )
             Text(
-                text = "Karachi Water and Sewerage Services \nImprovement Project",
+                text = "Karachi Water & Sewerage Corporation",
                 fontSize = 9.sp,
                 lineHeight = 10.sp,
                 color = Color.White,

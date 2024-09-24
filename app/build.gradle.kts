@@ -13,8 +13,8 @@ android {
         applicationId = "com.aaraf.kwssip_android"
         minSdk = 24
         targetSdk = 34
-        versionCode = 6
-        versionName = "1.6"
+        versionCode = 9
+        versionName = "1.6.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -98,5 +98,6 @@ dependencies {
 
     implementation("io.github.chochanaresh:filepicker:+")
     implementation("com.squareup.retrofit2:converter-scalars:2.9.0")
+    implementation("com.google.accompanist:accompanist-insets:0.28.0")
 
 }

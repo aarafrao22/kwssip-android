@@ -217,7 +217,7 @@ fun HomeView(
                         modifier = Modifier
                             .align(Alignment.CenterHorizontally)
                             .padding(16.dp),
-                        enabled = selectedImageCount == 2
+                        enabled = selectedImageCount >= 2
                     ) {
                         Text("Upload Images")
                     }
@@ -235,7 +235,7 @@ fun HomeView(
                         modifier = Modifier
                             .align(Alignment.CenterHorizontally)
                             .padding(16.dp),
-                        enabled = selectedImageCount == 2
+                        enabled = selectedImageCount >= 2
                     ) {
                         Text("Capture Post Installation")
                     }

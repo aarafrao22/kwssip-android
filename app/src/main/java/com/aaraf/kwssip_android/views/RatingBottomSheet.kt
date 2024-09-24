@@ -16,11 +16,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -59,6 +61,7 @@ import com.aaraf.kwssip_android.Utils.TASK_ID
 import com.aaraf.kwssip_android.model.FeedbackResponse
 import com.aaraf.kwssip_android.network.RetrofitInterface
 import com.aaraf.kwssip_android.network.ServiceBuilder
+import com.google.accompanist.insets.ProvideWindowInsets
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -72,7 +75,6 @@ import java.io.File
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RatingBottomSheet(
@@ -81,9 +83,7 @@ fun RatingBottomSheet(
     onSuccess: () -> Unit
 ) {
     val name = rememberSaveable { mutableStateOf("") }
-
     val beforeImageUris = Utils.BEFORE_LIST_URI
-
     val context = LocalContext.current
     val comment = rememberSaveable { mutableStateOf("") }
     val phone = rememberSaveable { mutableStateOf("") }
@@ -91,193 +91,195 @@ fun RatingBottomSheet(
     val commentError = rememberSaveable { mutableStateOf<String?>(null) }
     val bottomSheetState = rememberModalBottomSheetState(false)
     val showAlertDialog = remember { mutableStateOf(false) }
-    val coroutineScope = rememberCoroutineScope() // For starting the activity
+    val coroutineScope = rememberCoroutineScope()
 
-    ModalBottomSheet(
-        onDismissRequest = { onDismiss() },
-        sheetState = bottomSheetState,
-        modifier = Modifier
-            .background(Color(0x884B4B4B))
-            .imePadding(),
-        containerColor = Color(0xFF3EB3E0),
-        dragHandle = { BottomSheetDefaults.DragHandle() },
-    ) {
-        Column(
+    suspend fun expandBottomSheet() {
+        if (bottomSheetState.hasPartiallyExpandedState) {
+            bottomSheetState.expand()
+        }
+    }
+
+    ProvideWindowInsets {
+        ModalBottomSheet(
+            onDismissRequest = { onDismiss() },
+            sheetState = bottomSheetState,
             modifier = Modifier
-                .verticalScroll(rememberScrollState(), reverseScrolling = true)
+                .background(Color(0x884B4B4B))
+                .fillMaxSize()
+                .imePadding(),
+            containerColor = Color(0xFF3EB3E0),
+            dragHandle = { BottomSheetDefaults.DragHandle() },
         ) {
-//            Spacer(modifier = Modifier.height(16.dp)) // Reduced space at the top
-
-            Text(
-                text = "Give a Rating!",
-                color = Color.White,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.SemiBold,
+            Column(
                 modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .padding(top = 30.dp, bottom = 16.dp) // Adjust padding
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            EmotionRatingBar(
-                emotions = listOf(
-                    R.drawable.img1,
-                    R.drawable.img2,
-                    R.drawable.img3,
-                    R.drawable.img4,
-                    R.drawable.img5
-                )
-            ) { selectedRating ->
-                rating.intValue = selectedRating + 1
-                // Handle the selected rating here
-                println("Selected rating: $selectedRating")
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = "Leave a comment*",
-                color = Color.White,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .padding(top = 24.dp, bottom = 16.dp) // Adjust padding
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(60.dp)
-                    .padding(horizontal = 16.dp)
+                    .imePadding()
+                    .wrapContentHeight()
+                    .verticalScroll(rememberScrollState(), reverseScrolling = true)
             ) {
+                Text(
+                    text = "Give a Rating!",
+                    color = Color.White,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier
+                        .align(Alignment.CenterHorizontally)
+                        .padding(top = 30.dp, bottom = 16.dp)
+                )
 
-                // First CustomTextFieldBottomSheet for Name
+                Spacer(modifier = Modifier.height(16.dp))
+
+                EmotionRatingBar(
+                    emotions = listOf(
+                        R.drawable.img1,
+                        R.drawable.img2,
+                        R.drawable.img3,
+                        R.drawable.img4,
+                        R.drawable.img5
+                    )
+                ) { selectedRating ->
+                    rating.intValue = selectedRating + 1
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "Leave a comment*",
+                    color = Color.White,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier
+                        .align(Alignment.CenterHorizontally)
+                        .padding(top = 24.dp, bottom = 16.dp)
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(60.dp)
+                        .padding(horizontal = 16.dp)
+                ) {
+                    CustomTextFieldBottomSheet(
+                        value = name.value,
+                        onValueChange = {
+                            name.value = it
+                            coroutineScope.launch { expandBottomSheet() }
+                        },
+                        placeholder = "Name",
+                        errorMessage = commentError.value,
+                        modifier = Modifier
+                            .align(Alignment.CenterVertically)
+                            .weight(1f)
+                            .padding(end = 8.dp)
+                    )
+
+                    CustomTextFieldBottomSheet(
+                        value = phone.value,
+                        onValueChange = {
+                            phone.value = it
+                            coroutineScope.launch { expandBottomSheet() }
+                        },
+                        placeholder = "Phone",
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        errorMessage = commentError.value,
+                        modifier = Modifier
+                            .align(Alignment.CenterVertically)
+                            .weight(1f)
+                            .padding(start = 8.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
                 CustomTextFieldBottomSheet(
-                    value = name.value,
-                    onValueChange = { name.value = it },
-                    placeholder = "Name",
+                    value = comment.value,
+                    onValueChange = {
+                        comment.value = it
+                        coroutineScope.launch { expandBottomSheet() }
+                    },
+                    placeholder = "Write Your Feedback",
                     errorMessage = commentError.value,
                     modifier = Modifier
-                        .align(Alignment.CenterVertically)
-                        .weight(1f)
-                        .padding(end = 8.dp)
+                        .fillMaxWidth()
+                        .padding(start = 8.dp, end = 8.dp)
+                        .height(100.dp),
                 )
 
-                // Second CustomTextFieldBottomSheet for Phone
-                CustomTextFieldBottomSheet(
-                    value = phone.value,
-                    onValueChange = { phone.value = it },
-                    placeholder = "Phone",
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    errorMessage = commentError.value,
-                    modifier = Modifier
-                        .align(Alignment.CenterVertically)
-                        .weight(1f)
-                        .padding(start = 8.dp)
-                )
-            }
+                Spacer(modifier = Modifier.height(24.dp))
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Button(
+                    onClick = {
+                        val driverID = getSavedAppId(context)
 
-            CustomTextFieldBottomSheet(
-                value = comment.value,
-                onValueChange = { comment.value = it },
-                placeholder = "Write Your Feedback",
-                errorMessage = commentError.value,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 8.dp, end = 8.dp)
-                    .height(100.dp),
-            )
+                        showAlertDialog.value = false
 
-            Spacer(modifier = Modifier.height(24.dp)) // Adjusted spacing
-
-            Button(
-                onClick = {
-                    val driverID = getSavedAppId(context)
-
-                    showAlertDialog.value = false
-
-                    coroutineScope.launch {
-
-                        upload(name.value,
-                            customerFeedback = comment.value,
-                            context = context,
-                            customerContact = phone.value,
-                            rating = rating.intValue,
-                            driverId = Integer.valueOf(driverID),
-                            beforeImageUris = beforeImageUris,
-                            afterImageUris = afterImageUris,
-                            onFailure = {
-                                showAlertDialog.value = false
-                                Log.d(TAG, "RatingBottomSheet: ${beforeImageUris.size}")
-                                Log.d(TAG, "RatingBottomSheet: ${afterImageUris.size}")
-                                Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
-                            },
-                            onSuccess = {
-                                showAlertDialog.value = true
-                                Log.d(TAG, "RatingBottomSheet: $beforeImageUris")
-
-                                Log.d(TAG, "RatingBottomSheet: $afterImageUris")
-                                onSuccess()
-                            })
-
-
-                    }
-
-                }, colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.White,
-                    contentColor = colorResource(id = R.color.theme_blue)
-                ), modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .padding(16.dp)
-            ) {
-                Text("Upload")
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            if (showAlertDialog.value) {
-                AlertDialog(onDismissRequest = {
-                    showAlertDialog.value = false
-                    onDismiss()
-                },
-                    title = { Text("Uploaded Successfully") },
-
-                    text = { Text("Thanks For Uploading Images") },
-                    confirmButton = {
-                        Button(
-                            onClick = {
-
-                                Log.d(
-                                    TAG,
-                                    "RatingBottomSheet: name: $name phone: $phone connect: $comment"
-                                )
-
-                                showAlertDialog.value = false
-
-                                ///HERE
-                                phone.value = ""
-                                name.value = ""
-                                rating.intValue = 0
-                                comment.value = ""
-
-                                onDismiss()
-                            }, colors = ButtonDefaults.buttonColors(
-                                containerColor = colorResource(id = R.color.theme_blue)
-                            )
-                        ) {
-                            Text("OK")
+                        coroutineScope.launch {
+                            upload(
+                                name.value,
+                                customerFeedback = comment.value,
+                                context = context,
+                                customerContact = phone.value,
+                                rating = rating.intValue,
+                                driverId = Integer.valueOf(driverID),
+                                beforeImageUris = beforeImageUris,
+                                afterImageUris = afterImageUris,
+                                onFailure = {
+                                    showAlertDialog.value = false
+                                    Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+                                },
+                                onSuccess = {
+                                    showAlertDialog.value = true
+                                    onSuccess()
+                                })
                         }
-                    })
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.White,
+                        contentColor = colorResource(id = R.color.theme_blue)
+                    ),
+                    modifier = Modifier
+                        .align(Alignment.CenterHorizontally)
+                        .padding(16.dp)
+                ) {
+                    Text("Upload")
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                if (showAlertDialog.value) {
+                    AlertDialog(
+                        onDismissRequest = {
+                            showAlertDialog.value = false
+                            onDismiss()
+                        },
+                        title = { Text("Uploaded Successfully") },
+                        text = { Text("Thanks For Uploading Images") },
+                        confirmButton = {
+                            Button(
+                                onClick = {
+                                    phone.value = ""
+                                    name.value = ""
+                                    rating.intValue = 0
+                                    comment.value = ""
+
+                                    showAlertDialog.value = false
+                                    onDismiss()
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = colorResource(id = R.color.theme_blue)
+                                )
+                            ) {
+                                Text("OK")
+                            }
+                        }
+                    )
+                }
             }
         }
     }
 }
+
 
 @Composable
 fun EmotionRatingBar(
